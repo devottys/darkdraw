@@ -755,7 +755,7 @@ def set_color(self, color):
         vd.addUndo(setattr, r, 'color', oldcolor)
 
 
-Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
+Drawing.addCommand('zf', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)')
 Drawing.addCommand('gc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
 Drawing.addCommand('zc', 'cycle-color', 'for r in sheet.cursorRows: r.color = cycleColor(r.color)')
