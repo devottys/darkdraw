@@ -281,14 +281,22 @@ class Drawing(BaseSheet):
         self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
         self.draw(self._scr)
 
+    def autosave(self):
+        try:
+            now = time.time()
+            autosave_interval_s = self.options.autosave_interval_s
+            if autosave_interval_s and now-self.last_autosave > autosave_interval_s:
+                p = Path(options.autosave_path)
+                if not p.exists():
+                    os.makedirs(p)
+                vd.saveSheets(p/time.strftime('autosave-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self)
+                self.last_autosave = now
+        except Exception as e:
+            vd.exceptionCaught(e)
+
     def draw(self, scr):
         now = time.time()
-        autosave_interval_s = self.options.autosave_interval_s
-        if autosave_interval_s and now-self.last_autosave > autosave_interval_s:
-            p = Path(options.autosave_path)
-            os.makedirs(p)
-            vd.saveSheets(p/time.strftime('autosave-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self)
-            self.last_autosave = now
+        self.autosave()
         vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
 
         thisframe = self.currentFrame
