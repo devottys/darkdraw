@@ -586,7 +586,7 @@ class Drawing(BaseSheet):
                 newx = self.cursorBox.x1
                 newy = self.cursorBox.y1
                 if len(srcrows) > 1:
-                    self.go_forward(dispwidth(r.text)+1, 1)
+                    self.go_forward(dispwidth(oldr.text)+1, 1)
             else:
                 newx = (oldr.x or 0)+self.cursorBox.x1-x1
                 newy = (oldr.y or 0)+self.cursorBox.y1-y1
