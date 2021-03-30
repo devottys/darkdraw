@@ -2,7 +2,7 @@
 
 from setuptools import setup
 
-__version__='0.1b'
+__version__='0.1c'
 
 setup(name='darkdraw',
       version=__version__,
