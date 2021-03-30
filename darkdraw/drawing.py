@@ -9,6 +9,8 @@ from .box import CharBox
 vd.allPrefixes += list('01')
 vd.option('pen_down', False, 'is pen down')
 vd.option('disp_guide_xy', '80 25', 'x y of onscreen guides')
+vd.option('autosave_interval_s', 0, 'seconds between autosave')
+vd.option('autosave_path', 'autosave', 'path to put autosave files')
 
 vd.charPalWidth = charPalWidth = 16
 vd.charPalHeight = charPalHeight = 16
@@ -280,21 +282,27 @@ class Drawing(BaseSheet):
         self.draw(self._scr)
 
     def draw(self, scr):
+        now = time.time()
+        autosave_interval_s = self.options.autosave_interval_s
+        if autosave_interval_s and now-self.last_autosave > autosave_interval_s:
+            p = Path(options.autosave_path)
+            os.makedirs(p)
+            vd.saveSheets(p/time.strftime('autosave-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self)
+            self.last_autosave = now
         vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
 
         thisframe = self.currentFrame
         if self.autoplay_frames:
             vd.timeouts_before_idle = -1
-            t = time.time()
             ft, f = self.autoplay_frames[0]
             thisframe = f
             if not ft:
-                self.autoplay_frames[0][0] = t
-            elif t-ft > f.duration_ms/1000:  # frame expired
-#                vd.status('next frame after %0.3fs' % (t-ft))
+                self.autoplay_frames[0][0] = now
+            elif now-ft > f.duration_ms/1000:  # frame expired
+#                vd.status('next frame after %0.3fs' % (now-ft))
                 self.autoplay_frames.pop(0)
                 if self.autoplay_frames:
-                    self.autoplay_frames[0][0] = t
+                    self.autoplay_frames[0][0] = now
                     thisframe = self.autoplay_frames[0][1]
                     vd.curses_timeout = thisframe.duration_ms
                 else:
@@ -806,6 +814,7 @@ Drawing.init('mark', lambda: (0,0))
 Drawing.init('paste_mode', lambda: 'all')
 Drawing.init('cursorFrameIndex', lambda: 0)
 Drawing.init('autoplay_frames', list)
+Drawing.init('last_autosave', int)
 vd.default_color = ''
 Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows} {sheet.rowtype}  {sheet.options.disp_selected_note}{sheet.source.nSelectedRows}'
 Drawing.class_options.quitguard='modified'
