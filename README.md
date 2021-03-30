@@ -16,7 +16,7 @@ Art and animation for the terminal, in the terminal.
 ## Backing sheet
 
 The drawing is rendered from a straightforward list of items with x/y/text/color and other attributes.
-This list can be used directly and called the 'backing sheet'.
+This list can be used directly and is called the 'backing sheet'.
 
 - `` ` `` (open-source): push backing sheet (if on drawing) or drawing (if on backing sheet)
 
@@ -50,7 +50,7 @@ This list can be used directly and called the 'backing sheet'.
 
 - `gm` (tag-selected): add given tag to selected items
 - `|` (select-tag): select all items with the given tag
-- `\\` (unselect-tag): unselect all items with the given tag
+- `\` (unselect-tag): unselect all items with the given tag
 
 ### Extra hotkeys
 
