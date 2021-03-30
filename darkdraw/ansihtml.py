@@ -1,4 +1,5 @@
 from unittest import mock
+from pkg_resources import resource_filename
 from visidata import AttrDict, VisiData, colors
 
 from .drawing import Drawing, DrawingSheet
@@ -79,7 +80,7 @@ def save_ansihtml(vd, p, *sheets):
         body += '</pre>\n'
 
     try:
-        tmpl = open('ansi.html').read()
+        tmpl = open(resource_filename(__name__, 'ansi.html')).read()
         out = tmpl.replace('<body>', '<body>'+body)
     except FileNotFoundError:
         out = body
