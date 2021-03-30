@@ -15,8 +15,8 @@ vd.charPalHeight = charPalHeight = 16
 
 @VisiData.api
 def open_ddw(vd, p):
-    vd.timeouts_before_idle = 60
-    return DrawingSheet(p.name, 'table', source=p).drawing
+    vd.timeouts_before_idle = 1000
+    return DrawingSheet(p.name, source=p).drawing
 
 vd.save_ddw = vd.save_jsonl
 
