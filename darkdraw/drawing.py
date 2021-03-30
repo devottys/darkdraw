@@ -359,7 +359,7 @@ class Drawing(BaseSheet):
         defcolor = self.options.color_default
         defattr = colors[defcolor]
         if self.options.visibility == 1: # draw tags
-            clipdraw(scr, 0, self.windowWidth-20, '00: (reset)', defattr)
+            clipdraw(scr, 0, self.windowWidth-20, '  00: (reset)  ', defattr)
             for i, tag in enumerate(self._tags.keys()):
                 c = defcolor
                 if tag in self.disabled_tags:
@@ -368,15 +368,15 @@ class Drawing(BaseSheet):
                     c = self.options.color_current_row + ' ' + c
                 if tag in selectedGroups:
                     c = self.options.color_selected_row + ' ' + c
-                clipdraw(scr, i+1, self.windowWidth-20, '%02d: %s' % (i+1, tag), colors[c])
+                clipdraw(scr, i+1, self.windowWidth-20, '  %02d: %7s  ' % (i+1, tag), colors[c])
 
         elif self.options.visibility == 2: # draw clipboard item shortcuts
             if not vd.memory.cliprows:
                 return
             for i, r in enumerate(vd.memory.cliprows[:10]):
                 x = self.windowWidth-20
-                x += clipdraw(scr, i+1, x, '%d: ' % (i+1), defattr)
-                x += clipdraw(scr, i+1, x, r.text, colors[r.color])
+                x += clipdraw(scr, i+1, x, '  %d: ' % (i+1), defattr)
+                x += clipdraw(scr, i+1, x, r.text + '  ', colors[r.color])
 
 
         # draw lstatus2 (paste status with default color)
@@ -755,7 +755,7 @@ def set_color(self, color):
         vd.addUndo(setattr, r, 'color', oldcolor)
 
 
-Drawing.addCommand('zf', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
+Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)')
 Drawing.addCommand('gc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
 Drawing.addCommand('zc', 'cycle-color', 'for r in sheet.cursorRows: r.color = cycleColor(r.color)')
