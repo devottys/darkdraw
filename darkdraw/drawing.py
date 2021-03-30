@@ -280,7 +280,7 @@ class Drawing(BaseSheet):
         self.draw(self._scr)
 
     def draw(self, scr):
-        vd.getHelpPane('darkdraw').draw(scr, y=-1, x=-1)
+        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
 
         thisframe = self.currentFrame
         if self.autoplay_frames:
@@ -777,7 +777,7 @@ Drawing.addCommand('zi', 'insert-col', 'for r in source.someSelectedRows: r.x +=
 Drawing.addCommand('zm', 'place-mark', 'sheet.mark=(cursorBox.x1, cursorBox.y1)')
 Drawing.addCommand('m', 'swap-mark', '(cursorBox.x1, cursorBox.y1), sheet.mark=sheet.mark, (cursorBox.x1, cursorBox.y1)')
 Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+1)%3')
-Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames = [[0, f] for f in sheet.frames]')
+Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend(([0, f] for f in sheet.frames)')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 
 Drawing.addCommand('kRIT5', 'resize-cursor-wider', 'sheet.cursorBox.w += 1')
