@@ -2,6 +2,8 @@
 
 Art and animation for the terminal, in the terminal.
 
+![faerie fire](dwimmer_faerie-fire.gif)
+
 - unicode and 256-color support
 - discover useful glyphs with the unicode browser
 - frame-by-frame animation
