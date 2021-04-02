@@ -241,7 +241,7 @@ class Drawing(BaseSheet):
         'Yield at most *n* rows from each cell within the given box.'
         for nx in range(box.x1, box.x2-1):
             for ny in range(box.y1, box.y2-1):
-                yield from self._displayedRows[(nx,ny)][:n]
+                yield from self._displayedRows[(nx,ny)][-(n or 0):]
 
     @property
     def rows(self):
@@ -277,8 +277,8 @@ class Drawing(BaseSheet):
         self.cursorBox.x1, self.cursorBox.x2 = a, b
         return True
 
-    def itercursor(self, **kwargs):
-        return self.iterbox(self.cursorBox, **kwargs)
+    def itercursor(self, n=None):
+        return self.iterbox(self.cursorBox, n=n)
 
     def refresh(self):
         self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
@@ -601,7 +601,7 @@ class Drawing(BaseSheet):
         modes = ['all', 'char', 'color']
         self.paste_mode = modes[(modes.index(self.paste_mode)+1)%len(modes)]
 
-    def paste_chars(self, srcrows):
+    def paste_chars(self, srcrows, n=None):
         srcrows or vd.fail('no rows to paste')
 
         newrows = []
@@ -628,20 +628,23 @@ class Drawing(BaseSheet):
                 newrows.append(r)
                 self.source.addRow(r)
             elif self.paste_mode == 'color':
-                if oldr.color:
-                    for existing in self._displayedRows[(newx, newy)]:
+                if oldr.color and newx < self.cursorBox.x2 and newy < self.cursorBox.y2-1:
+                    for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                         existing.color = oldr.color
 
-    def paste_groupref(self, rows):
-        for r in rows:
+    def paste_special(self):
+        if self.paste_mode == 'color':  # top only
+            return self.paste_chars(vd.memory.cliprows, n=1)
+
+        for r in vd.memory.cliprows:
             if r.type == 'group':
                 newr = self.newRow()
                 newr.type = 'ref'
                 newr.x, newr.y = self.cursorBox.x1, self.cursorBox.y1
                 newr.ref = r.id
                 self.addRow(newr)
-            else:
-                vd.warning('not a group')
+            elif r.type:
+                vd.status('ignoring %s type row' % r.type)
 
     def select_tag(self, tag):
         self.select(list(r for r in self.source.rows if tag in (r.tags or '')))
@@ -706,7 +709,7 @@ Drawing.addCommand('gy', 'yank-selected', 'sheet.copyRows(sheet.selectedRows)')
 Drawing.addCommand('x', 'cut-char', 'sheet.copyRows(remove_at(cursorBox))')
 Drawing.addCommand('zx', 'cut-char-top', 'r=list(itercursor())[-1]; sheet.copyRows([r]); source.deleteBy(lambda r,row=r: r is row)')
 Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.memory.cliprows)')
-Drawing.addCommand('zp', 'paste-group', 'sheet.paste_groupref(vd.memory.cliprows)')
+Drawing.addCommand('zp', 'paste-special', 'sheet.paste_special()')
 
 Drawing.addCommand('zh', 'go-left-obj', 'go_obj(-1, 0)')
 Drawing.addCommand('zj', 'go-down-obj', 'go_obj(0, +1)')

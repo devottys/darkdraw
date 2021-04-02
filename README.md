@@ -172,7 +172,10 @@ These extra hotkeys will function regardless of whether they are currently shown
 
 - `p` (paste-chars): paste items on clipbard at cursor according to paste mode (above)
 
-- `zp` (paste-group): paste **reference** to group on clipboard at cursor.
+- `zp` (paste-special):
+    - if paste mode is color, paste color only over top of cursor.
+    - if group is on clipboard, paste **reference** at cursor.
+    - otherwise no effect
 
 - Individual objects that were copied to the clipboard (with `gy`, for instance) are
 available to be pasted onto the drawing with the number keys.  In visibility mode 2, the objects on the clipboard are shown next to a number.  Press that number key to paste that object at the cursor.
