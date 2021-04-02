@@ -234,11 +234,11 @@ class DrawingSheet(JsonSheet):
 
 
 class Drawing(BaseSheet):
-    def iterbox(self, box):
-        'Yield rows within the given box.'
+    def iterbox(self, box, n=None):
+        'Yield at most *n* rows from each cell within the given box.'
         for nx in range(box.x1, box.x2-1):
             for ny in range(box.y1, box.y2-1):
-                yield from self._displayedRows[(nx,ny)]
+                yield from self._displayedRows[(nx,ny)][:n]
 
     @property
     def rows(self):
@@ -274,8 +274,8 @@ class Drawing(BaseSheet):
         self.cursorBox.x1, self.cursorBox.x2 = a, b
         return True
 
-    def itercursor(self):
-        return self.iterbox(self.cursorBox)
+    def itercursor(self, **kwargs):
+        return self.iterbox(self.cursorBox, **kwargs)
 
     def refresh(self):
         self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
@@ -720,13 +720,15 @@ Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(
 Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
 Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
 
-Drawing.addCommand('gs', 'select-all', 'source.select(source.rows)')
-Drawing.addCommand('gt', 'toggle-all', 'source.toggle(source.rows)')
 Drawing.addCommand('s', 'select-cursor', 'source.select(list(itercursor()))')
 Drawing.addCommand('t', 'toggle-cursor', 'source.toggle(list(itercursor()))')
 Drawing.addCommand('u', 'unselect-cursor', 'source.unselect(list(itercursor()))')
-Drawing.addCommand('zs', 'select-top-cursor', 'source.selectRow(list(itercursor())[-1])')
+Drawing.addCommand('gs', 'select-all', 'source.select(source.rows)')
+Drawing.addCommand('gt', 'toggle-all', 'source.toggle(source.rows)')
 Drawing.addCommand('gu', 'unselect-all', 'source.clearSelected()')
+Drawing.addCommand('zs', 'select-top-cursor', 'source.select(list(itercursor(n=1)))')
+Drawing.addCommand('zt', 'toggle-top-cursor', 'source.toggle(list(itercursor(n=1)))')
+Drawing.addCommand('zu', 'unselect-top-cursor', 'source.unselect(list(itercursor(n=1)))')
 
 Drawing.addCommand('z00', 'enable-all-groups', 'disabled_tags.clear()')
 for i in range(1, 99):
