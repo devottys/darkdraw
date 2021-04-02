@@ -802,7 +802,9 @@ Drawing.addCommand('g>', 'color-selected-next', 'cycle_color(selectedRows, 1)')
 Drawing.addCommand('z<', 'cycle-topcursor-prev', 'cycle_color(topCursorRows, -1)')
 Drawing.addCommand('z>', 'cycle-topcursor-next', 'cycle_color(topCursorRows, 1)')
 
-Drawing.addCommand('gm', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows, vd.input("tag selected as: ", type="tag"))')
+Drawing.addCommand('g+', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows, vd.input("tag selected as: ", type="tag"))')
+Drawing.addCommand('+', 'tag-cursor', 'sheet.tag_rows(sheet.cursorRows, vd.input("tag cursor as: ", type="tag"))')
+Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, vd.input("tag top of cursor as: ", type="tag"))')
 
 Drawing.addCommand(ENTER, 'dive-cursor', 'vd.push(DrawingSheet(source=sheet, rows=cursorRows))')
 Drawing.addCommand('g'+ENTER, 'dive-selected', 'vd.push(DrawingSheet(source=sheet, rows=source.selectedRows))')

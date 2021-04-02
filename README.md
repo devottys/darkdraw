@@ -126,7 +126,7 @@ This list can be used directly and is called the 'backing sheet'.
 
 #### Tags
 
-- `gm` (tag-selected): add given tag to selected items
+- `+` `z+` `g+` (tag): add given tag to cursor/topcursor/selected items
 - `|` (select-tag): select all items with the given tag
 - `\` (unselect-tag): unselect all items with the given tag
 
@@ -188,7 +188,13 @@ available to be pasted onto the drawing with the number keys.  In visibility mod
 ### Color
 
 - `c` (set-default-color): set default color to color of top item at cursor
-- `gc` (set-color-input): set default color to input color
+
+- `zc` (set-color-input): set default color to input color
+
+- `<` `>` (cycle-cursor): cycle numeric colors for items under cursor to prev/next color
+- `z<` `z>` (cycle-topcursor): cycle numeric colors for top (displayed) items under cursor to prev/next color
+- `g<` `g>` (cycle-selected): cycle numeric colors for selected items to prev/next color
+
 - or, edit the color field directly on the backing sheet
    - all the standard bulk VisiData editing commands are available on the backing sheet
 
