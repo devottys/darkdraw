@@ -223,6 +223,12 @@ If an object or group has its 'frame' attribute set, it will only be drawn in fr
 - `Tab`: swap active pane
 - `g Ctrl+^`: cycle through sheets in this pane
 
-### Notes for VisiData users
+## Options
+
+- `autosave_interval_s`: number of seconds between autosaves (default 0 is disabled)
+- `autosave_path`: folder for autosave files
+- `disp_guide_xy`: string of x y to draw guides onscreen (default `80 25`)
+
+## Notes for VisiData users
 
 - on DrawingSheet, `[` and `]` are unbound (normally sort): accidentally sorting a DrawingSheet can be disastrous, since characters are drawn in order (so later characters are 'on top')
