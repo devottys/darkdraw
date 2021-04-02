@@ -27,16 +27,22 @@ DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There a
 
 0. Ensure Python3 and pip3 are installed on your system.
 
+```
     python3 --version
     pip3 --version
+```
 
 1. Install the latest VisiData release from GitHub:
 
+```
     pip3 install visidata
+```
 
 2. Then once installed launch VisiData:
 
+```
     vd
+```
 
 3. Scroll down to "VisiData community plugins" and press `Enter`. Alternative press `Space`, and type `open-plugins`.
 
@@ -46,31 +52,39 @@ DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There a
 
 0. Ensure Python3 and pip3 are installed on your system.
 
+```
     python3 --version
     pip3 --version
+```
 
 1. Install the latest darkdraw release from GitHub:
 
+```
     pip3 install https://github.com/devottys/darkdraw.git@master
+```
 
 2. Create a `.visidatarc` in your `$HOME` directory, and in it add:
 
+```
     from darkdraw import *
+```
 
 ## Usage
 
 Darkdraw is a VisiData plugin, to use the darkdraw loader with a new project, have VisiData open a new filetype with the suffix `*.ddw`.
 
+```
     vd foo.ddw
+```
 
 To start, you can play with some of the samples:
 
-
+```
     vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/colors.ddw
     vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bouncyball.ddw
     vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/arrows.ddw
     vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bw16colors.ddw
-
+```
 
 ## Commands
 
