@@ -465,6 +465,10 @@ class Drawing(BaseSheet):
         return list(self.iterbox(self.cursorBox))
 
     @property
+    def topCursorRows(self):
+        return list(self.iterbox(self.cursorBox, n=1))
+
+    @property
     def cursorRow(self):
         cr = self.cursorRows
         if cr: return cr[-1]
@@ -762,9 +766,18 @@ def flip_vert(sheet, box):
         r.y = box.y2+box.y1-r.y-2
         vd.addUndo(setattr, r, 'y', oldy)
 
-@VisiData.api
-def cycleColor(vd, c, n=1):
-    return ''.join(str(int(x)+n) if x.isdigit() else x for x in c.split())
+@Drawing.api
+def cycle_color(sheet, rows, n=1):
+    for r in rows:
+       clist = []
+       for c in r.color.split():
+           try:
+                c = str((int(c)+n) % 256)
+           except Exception:
+                pass
+           clist.append(c)
+       r.color = ''.join(clist)
+
 
 @Drawing.api
 def set_color(self, color):
@@ -773,11 +786,15 @@ def set_color(self, color):
         r.color = color
         vd.addUndo(setattr, r, 'color', oldcolor)
 
-
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)')
-Drawing.addCommand('gc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
-Drawing.addCommand('zc', 'cycle-color', 'for r in sheet.cursorRows: r.color = cycleColor(r.color)')
+Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
+Drawing.addCommand('<', 'cycle-cursor-prev', 'cycle_color(cursorRows, -1)')
+Drawing.addCommand('>', 'cycle-cursor-next', 'cycle_color(cursorRows, 1)')
+Drawing.addCommand('g<', 'color-selected-prev', 'cycle_color(selectedRows, -1)')
+Drawing.addCommand('g>', 'color-selected-next', 'cycle_color(selectedRows, 1)')
+Drawing.addCommand('z<', 'cycle-topcursor-prev', 'cycle_color(topCursorRows, -1)')
+Drawing.addCommand('z>', 'cycle-topcursor-next', 'cycle_color(topCursorRows, 1)')
 
 Drawing.addCommand('gm', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows, vd.input("tag selected as: ", type="tag"))')
 
