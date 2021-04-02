@@ -10,6 +10,56 @@ Art and animation for the terminal, in the terminal.
 - manipulate the data behind the drawing with [VisiData](visidata.org)
 - define your own character and colour palettes (they're just regular drawings)
 
+## Platform requirements
+
+- Linux, OS/X, or Windows (with WSL)
+- Python 3.6+
+- [VisiData](https://github.com/saulpw/visidata) and [wcwidth](https://github.com/jquast/wcwidth)
+    - will be installed automatically through the installer
+
+## Install
+
+DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There are two ways to install it.
+
+### Install DarkDraw first
+
+1. Install the latest darkdraw release from GitHub:
+
+    pip3 install https://github.com/devottys/darkdraw.git@master
+
+2. Create a `.visidatarc` in your `$HOME` directory, and in it add:
+
+    from darkdraw import *
+
+### Or Install VisiData first
+
+1. Install the latest VisiData release from GitHub:
+
+    pip3 install visidata
+
+2. Then once installed launch VisiData:
+
+    vd
+
+3. Scroll down to "VisiData community plugins" and press `Enter`. Alternative press `Space`, and type `open-plugins`.
+
+4. Within the **Plugins Sheet** scroll down to darkdraw, and press `a` to install it. It will be available on the next launch.
+
+## Usage
+
+Darkdraw is a VisiData plugin, to use the darkdraw loader with a new project, have VisiData open a new filetype with the suffix `*.ddw`.
+
+    vd foo.ddw
+
+To start, you can play with some of the samples:
+
+
+    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/colors.ddw
+    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bouncyball.ddw
+    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/arrows.ddw
+    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bw16colors.ddw
+
+
 ## Commands
 
 - `Ctrl+S` (save-sheet): save drawing to .ddw (either from drawing or backing sheet)
