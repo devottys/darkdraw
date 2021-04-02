@@ -202,7 +202,11 @@ class DrawingSheet(JsonSheet):
     def degroup_selected(self):
         degrouped = []
         groups = set()
-        for r, x, y, parents in self.iterdeep(self.someSelectedRows):
+        for row in self.someSelectedRows:
+          if row.type == 'ref':
+            vd.warning("can't degroup reference (to '%s')" % row.ref)
+            continue
+          for r, x, y, parents in self.iterdeep([row]):
             r.x = x
             r.y = y
             r.group = '.'.join((p.id or '') for p in parents[:-1])
