@@ -217,10 +217,8 @@ Color values are strings like `'<attr> <fgcolorname> on <bgcolorname>'`.  Any of
 
 Groups are handled as a single entity, both on the drawing and on the backing sheet.
 
-- `Shift+G` (group-selected): 
-- `g Shift+G` (regroup-selected):
-- `z Shift+G` (degroup-selected-temp):
-- `gz Shift+G` (degroup-selected-perm):
+- `)` `z)` `g)`  group cursor/topcursor/selected
+- `(` `z(` `g(`  degroup cursor/topcursor/selected
 
 ### Animation
 
