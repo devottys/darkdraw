@@ -10,6 +10,8 @@ Art and animation for the terminal, in the terminal.
 - manipulate the data behind the drawing with [VisiData](visidata.org)
 - define your own character and colour palettes (they're just regular drawings)
 
+[A brief history of the project](https://twitter.com/saulfp/status/1377747742290665475).
+
 ## Platform requirements
 
 - Linux, OS/X, or Windows (with WSL)
