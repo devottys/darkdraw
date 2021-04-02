@@ -175,10 +175,10 @@ class DrawingSheet(JsonSheet):
         self.select([nr])
         vd.status('group "%s" (%d objects)' % (gname, self.nSelectedRows))
 
-    def regroup_selected(self):
+    def regroup(self, rows):
         regrouped = []
         groups = set()  # that items were grouped into
-        for r in self.someSelectedRows:
+        for r in rows:
             if r.group:
                 regrouped.append(r)
                 if r.group not in self.groups:
@@ -199,10 +199,10 @@ class DrawingSheet(JsonSheet):
 
         vd.status('regrouped %d %s' % (len(regrouped), self.rowtype))
 
-    def degroup_selected(self):
+    def degroup(self, rows):
         degrouped = []
         groups = set()
-        for row in self.someSelectedRows:
+        for row in rows:
           if row.type == 'ref':
             vd.warning("can't degroup reference (to '%s')" % row.ref)
             continue
@@ -221,11 +221,10 @@ class DrawingSheet(JsonSheet):
         for g in groups:
             oldrows = copy(self.groups[g].rows)
             self.groups[g].rows.clear()
-            vd.addUndo(setattr, self.groups[g], 'rows', oldrows)
+            vd.addUndo(self.regroup, oldrows)
 
-        self.clearSelected()
-        self.select(degrouped)
         vd.status('ungrouped %d %s' % (len(degrouped), self.rowtype))
+        return degrouped
 
     def gatherTag(self, gname):
         return list(r for r in self.rows if gname in r.get('group', ''))
@@ -720,12 +719,12 @@ Drawing.addCommand('K', 'slide-up-obj', 'slide_selected(0, -1)')
 Drawing.addCommand('L', 'slide-right-obj', 'slide_selected(+1, 0)')
 
 Drawing.addCommand('G', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
-Drawing.addCommand('gG', 'regroup-selected', 'sheet.regroup_selected()')
-Drawing.addCommand('zG', 'degroup-selected-temp', 'sheet.degroup_selected()')
+Drawing.addCommand('gG', 'regroup-selected', 'sheet.regroup(source.someSelectedRows)')
+Drawing.addCommand('zG', 'degroup-selected-temp', 'degrouped = sheet.degroup(source.someSelectedRows); source.clearSelected(); source.select(degrouped)')
 Drawing.addCommand('gzG', 'degroup-selected-perm', 'sheet.degroup_all()')
 DrawingSheet.addCommand('G', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
-DrawingSheet.addCommand('zG', 'degroup-selected', 'sheet.degroup_selected()')
-DrawingSheet.addCommand('gG', 'regroup-selected', 'sheet.regroup_selected()')
+DrawingSheet.addCommand('zG', 'degroup-selected', 'degroup = sheet.degroup(someSelectedRows); clearSelected(); select(degrouped)')
+DrawingSheet.addCommand('gG', 'regroup-selected', 'sheet.regroup(someSelectedRows)')
 Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(lambda r,ch=cursorChar: r.text==ch)))')
 Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
 Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
