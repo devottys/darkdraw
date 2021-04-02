@@ -15,7 +15,7 @@ Art and animation for the terminal, in the terminal.
 ## Platform requirements
 
 - Linux, OS/X, or Windows (with WSL)
-- Python 3.6+
+- [Python 3.6+](https://www.python.org/downloads/)
 - [VisiData](https://github.com/saulpw/visidata) and [wcwidth](https://github.com/jquast/wcwidth)
     - will be installed automatically through the installer
 
