@@ -163,16 +163,20 @@ class DrawingSheet(JsonSheet):
     def group_selected(self, gname):
         nr = self.create_group(gname)
 
-        rows = self.selectedRows
-        nr.rows = rows
+        nr.rows = deepcopy(self.selectedRows)
         x1, y1, x2, y2 = bounding_box(nr.rows)
         nr.x, nr.y, nr.w, nr.h = x1, y1, x2-x1, y2-y1
         for r in nr.rows:
             r.x = (r.x or 0) - x1
             r.y = (r.y or 0) - y1
 
+        def _undoGroupSelected(sheet, group):
+            sheet.rows.pop(sheet.rows.index(group))
+
         self.deleteSelected()
         self.select([nr])
+
+        vd.addUndo(_undoGroupSelected, self, nr)
         vd.status('group "%s" (%d objects)' % (gname, self.nSelectedRows))
 
     def regroup(self, rows):
