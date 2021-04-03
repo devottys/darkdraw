@@ -182,7 +182,8 @@ class DrawingSheet(JsonSheet):
     def regroup(self, rows):
         regrouped = []
         groups = set()  # that items were grouped into
-        for r in rows:
+        new_rows = deepcopy(rows)
+        for r in new_rows:
             if r.group:
                 regrouped.append(r)
                 if r.group not in self.groups:
@@ -196,9 +197,11 @@ class DrawingSheet(JsonSheet):
                 r.x -= g.x
                 r.y -= g.y
                 g.rows.append(r)
+                vd.addUndo(g.rows.pop, g.rows.index(r))
                 groups.add(r.group)
 
         self.deleteBy(lambda r,rows=regrouped: r in rows)
+
         self.select(list(g for name, g in self.groups.items() if name in groups))
 
         vd.status('regrouped %d %s' % (len(regrouped), self.rowtype))
