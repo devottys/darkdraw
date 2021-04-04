@@ -82,10 +82,10 @@ Darkdraw is a VisiData plugin, to use the darkdraw loader with a new project, ha
 To start, you can play with some of the samples:
 
 ```
-    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/colors.ddw
-    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bouncyball.ddw
-    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/arrows.ddw
-    vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bw16colors.ddw
+    vd https://bluebird.sh/ddw/colors.ddw
+    vd https://bluebird.sh/ddw/bouncyball.ddw
+    vd https://bluebird.sh/ddw/arrows.ddw
+    vd https://bluebird.sh/ddw/bw16colors.ddw
 ```
 
 ![faerie fire](dwimmer_faerie-fire.gif)
