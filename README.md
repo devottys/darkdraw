@@ -2,7 +2,7 @@
 
 Art and animation for the terminal, in the terminal.
 
-![faerie fire](dwimmer_faerie-fire.gif)
+![darkdraw](dwimmer_darkdraw.gif)
 
 - unicode and 256-color support
 - discover useful glyphs with the unicode browser
@@ -16,7 +16,7 @@ Art and animation for the terminal, in the terminal.
 
 - Linux, OS/X, or Windows (with WSL)
 - [Python 3.6+](https://www.python.org/downloads/)
-- [VisiData](https://github.com/saulpw/visidata) and [wcwidth](https://github.com/jquast/wcwidth)
+- [VisiData](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
     - will be installed automatically through the installer
 
 ## Install
@@ -85,6 +85,8 @@ To start, you can play with some of the samples:
     vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/arrows.ddw
     vd https://raw.githubusercontent.com/devottys/darkdraw/master/samples/bw16colors.ddw
 ```
+
+![faerie fire](dwimmer_faerie-fire.gif)
 
 ## Commands
 
