@@ -11,6 +11,7 @@ Art and animation for the terminal, in the terminal.
 - define your own character and colour palettes (they're just regular drawings)
 
 [A brief history of the project](https://twitter.com/saulfp/status/1377747742290665475).
+All art and animations in this README were created by [dwimmer](https://www.instagram.com/dwimmer.tm/) using DarkDraw.
 
 ## Platform requirements
 
