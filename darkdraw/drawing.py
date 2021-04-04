@@ -299,7 +299,7 @@ class Drawing(BaseSheet):
                 p = Path(options.autosave_path)
                 if not p.exists():
                     os.makedirs(p)
-                vd.saveSheets(p/time.strftime('autosave-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self)
+                vd.saveSheets(p/time.strftime(self.name+'-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self)
                 self.last_autosave = now
         except Exception as e:
             vd.exceptionCaught(e)
