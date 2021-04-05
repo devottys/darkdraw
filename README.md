@@ -18,7 +18,7 @@ All art and animations in this README were created by [dwimmer](https://www.inst
 
 - Linux, OS/X, or Windows (with WSL)
 - [Python 3.6+](https://www.python.org/downloads/)
-- [VisiData](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
+- [VisiData >= v2.3](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
     - will be installed automatically through the installer
 
 ## Install
