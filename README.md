@@ -88,6 +88,12 @@ To start, you can play with some of the samples:
     vd https://bluebird.sh/ddw/bw16colors.ddw
 ```
 
+If pulling from the url does not work, try downloading the file, and then:
+
+```
+vd colors.ddw
+```
+
 ![faerie fire](dwimmer_faerie-fire.gif)
 
 ## Commands
