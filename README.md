@@ -7,7 +7,7 @@ Art and animation for the terminal, in the terminal.
 - unicode and 256-color support
 - discover useful glyphs with the unicode browser
 - frame-by-frame animation
-- manipulate the data behind the drawing with [VisiData](visidata.org)
+- manipulate the data behind the drawing with [VisiData](https://visidata.org)
 - define your own character and colour palettes (they're just regular drawings)
 
 [A brief history of the project](https://twitter.com/saulfp/status/1377747742290665475).
@@ -62,7 +62,7 @@ DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There a
 1. Install the latest darkdraw release from GitHub:
 
 ```
-    pip3 install https://github.com/devottys/darkdraw.git@master
+    pip3 install git+https://github.com/devottys/darkdraw.git@master
 ```
 
 2. Create a `.visidatarc` in your `$HOME` directory, and in it add:
@@ -215,7 +215,7 @@ available to be pasted onto the drawing with the number keys.  In visibility mod
 
 Color values are strings like `'<attr> <fgcolorname> on <bgcolorname>'`.  Any of these may be omitted; order does not matter.  `fg` and `bg`/`on` indicate whether the color is the foreground or background.
 
-- color names can be standard terminal colors (`red` `green` `blue` `yellow` `cyan` `magenta` `white` `black`) or a number from 0-255 for [xterm 256 colors]().
+- color names can be standard terminal colors (`red` `green` `blue` `yellow` `cyan` `magenta` `white` `black`) or a number from 0-255 for [xterm 256 colors](https://jonasjacek.github.io/colors/).
 - The terminal attributes `underline` and/or `bold` can be anywhere in the string.
 - Omitting the fg or bg color will fall back to the default color (white for fg, black for bg) for display.
 
