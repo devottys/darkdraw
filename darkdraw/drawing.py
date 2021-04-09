@@ -8,7 +8,7 @@ from .box import CharBox
 
 vd.allPrefixes += list('01')
 vd.option('pen_down', False, 'is pen down')
-vd.option('disp_guide_xy', '80 25', 'x y of onscreen guides')
+vd.option('disp_guide_xy', '', 'x y position of onscreen guides')
 vd.option('autosave_interval_s', 0, 'seconds between autosave')
 vd.option('autosave_path', 'autosave', 'path to put autosave files')
 
