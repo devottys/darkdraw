@@ -444,6 +444,7 @@ class Drawing(BaseSheet):
         if y is None: y = self.cursorBox.y1
         r = self.newRow()
         r.x, r.y, r.text = x, y, text
+        r.frame = r.currentFrame
         self.source.addRow(r)
         self.modified = True
         self.go_forward(dispwidth(text)+dx, 1+dy)
