@@ -340,11 +340,13 @@ class Drawing(BaseSheet):
         def draw_guides(xmax, ymax):
             if ymax < self.windowHeight-1:
                 for x in range(xmax):
-                    scr.addstr(ymax, x, '-')
+                    if x < self.windowWidth-1:
+                        scr.addstr(ymax, x, '-')
 
             if xmax < self.windowWidth-1:
                 for y in range(ymax):
-                    scr.addstr(y, xmax, '|')
+                    if y < self.windowHeight-1:
+                        scr.addstr(y, xmax, '|')
 
         #draw_guides(self.maxX+1, self.maxY+1)
         guidexy = self.options.disp_guide_xy
