@@ -20,6 +20,8 @@ def open_ddw(vd, p):
     vd.timeouts_before_idle = 1000
     return DrawingSheet(p.name, source=p).drawing
 
+vd.new_ddw = vd.open_ddw
+
 vd.save_ddw = vd.save_jsonl
 
 @VisiData.lazy_property
