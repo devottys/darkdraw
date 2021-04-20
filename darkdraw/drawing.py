@@ -622,7 +622,7 @@ class Drawing(BaseSheet):
         srcrows or vd.fail('no rows to paste')
 
         newrows = []
-
+        npasted = 0
         x1, y1, x2, y2 = bounding_box(srcrows)
         for oldr in srcrows:
             if oldr.x is None:
@@ -644,10 +644,15 @@ class Drawing(BaseSheet):
                     r.color = vd.default_color
                 newrows.append(r)
                 self.source.addRow(r)
+                npasted += 1
             elif self.paste_mode == 'color':
                 if oldr.color and newx < self.cursorBox.x2 and newy < self.cursorBox.y2-1:
                     for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
+                        npasted += 1
                         existing.color = oldr.color
+
+        if npasted == 0:
+            vd.warning(f'paste mode {self.paste_mode} had nothing to paste')
 
     def paste_special(self):
         if self.paste_mode == 'color':  # top only
