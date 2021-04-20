@@ -248,11 +248,14 @@ class DrawingSheet(JsonSheet):
 class Drawing(BaseSheet):
     def iterbox(self, box, n=None):
         'Yield at most *n* rows from each cell within the given box.'
-        ret = set()
+        ret = list()
         for nx in range(box.x1, box.x2-1):
             for ny in range(box.y1, box.y2-1):
-                ret.append(self._displayedRows[(nx,ny)][-(n or 0):])
-        return list(ret)
+                for r in self._displayedRows[(nx,ny)][-(n or 0):]:
+                    if r not in ret:
+                        ret.append(r)
+
+        return ret
 
     @property
     def rows(self):
