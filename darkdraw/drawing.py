@@ -426,7 +426,7 @@ class Drawing(BaseSheet):
         x += clipdraw(scr, y, x, ' %s' % vd.default_color, defattr)
 
         # draw rstatus2 (cursor status)
-        if self.cursorRows:
+        if hasattr(self, 'cursorRows') and self.cursorRows:
             c = self.cursorRows[0].color
             x = self.windowWidth-28-len(c)
             x += clipdraw(scr, y, x, '%s  ' % c, defattr)
