@@ -532,7 +532,9 @@ class Drawing(BaseSheet):
 
     @property
     def frameDesc(sheet):
-        return f'Frame {sheet.currentFrame.id} {sheet.cursorFrameIndex}/{max(sheet.nFrames-1, 0)}'
+        if not sheet.frames:
+            return ''
+        return f'Frame {sheet.currentFrame.id} {sheet.cursorFrameIndex}/{sheet.nFrames-1}'
 
     @property
     def cursorCharName(self):
