@@ -148,7 +148,7 @@ class DrawingSheet(JsonSheet):
             elif f1:
                 name = str(int(f1.id)+1)
             elif f2:
-                name = str(int(f1.id)-1)
+                name = str(int(f2.id)-1)
 
         newf = self.newRow()
         newf.type = 'frame'
@@ -157,8 +157,10 @@ class DrawingSheet(JsonSheet):
         if f1:
             for i, r in enumerate(self.rows):
                 if r is f1:
+                    vd.clearCaches()
                     return self.addRow(newf, index=i+1)
         else:
+            vd.clearCaches()
             return self.addRow(newf, index=0)
         vd.error('no existing frame ' + str(f1))
 
@@ -246,13 +248,21 @@ class DrawingSheet(JsonSheet):
 
 
 class Drawing(BaseSheet):
-    def iterbox(self, box, n=None):
-        'Yield at most *n* rows from each cell within the given box.'
+    rowtype = 'elements'  # rowdef: AttrDict (same as DrawingSheet)
+    def iterbox(self, box, n=None, frames=None):
+        'Yield top *n* displayed rows from each cell within the given box.'
         ret = list()
-        for nx in range(box.x1, box.x2-1):
-            for ny in range(box.y1, box.y2-1):
-                for r in self._displayedRows[(nx,ny)][-(n or 0):]:
-                    if r not in ret:
+        if frames is None:
+            for nx in range(box.x1, box.x2-1):
+                for ny in range(box.y1, box.y2-1):
+                    for r in self._displayedRows[(nx,ny)][-(n or 0):]:
+                        if r not in ret:
+                            ret.append(r)
+        else:
+            assert n is None
+            for r in self.rows:
+                if self.inFrame(r, frames):
+                    if box.contains(CharBox(None, r.x, r.y, r.w or dispwidth(r.text), r.h or 1)):
                         ret.append(r)
 
         return ret
@@ -274,6 +284,16 @@ class Drawing(BaseSheet):
             return self.frames[self.cursorFrameIndex]
         return AttrDict()
 
+    def elements(self, frames=None):
+        'Return elements in *frames*.  If *frames* is None, then base image only.  Otherwise, *frames* must be a list of frame rows (like from .currentFrame or .frames).'
+        return [r for r in self.rows if self.inFrame(r, frames)]
+
+    def inFrame(self, r, frames):
+        if r.type: return False
+        if not r.frame: return True
+        if not self.frames: return False
+        return any(r.frame == f.id for f in frames)
+
     def commandCursor(self, execstr):
         if 'cursor' in execstr:
             return '%s %s' % (self.cursorBox.x1, self.cursorBox.x2), '%s %s' % (self.cursorBox.y1, self.cursorBox.y2)
@@ -291,8 +311,8 @@ class Drawing(BaseSheet):
         self.cursorBox.x1, self.cursorBox.x2 = a, b
         return True
 
-    def itercursor(self, n=None):
-        return self.iterbox(self.cursorBox, n=n)
+    def itercursor(self, n=None, frames=None):
+        return self.iterbox(self.cursorBox, n=n, frames=frames or [self.currentFrame])
 
     def refresh(self):
         self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
@@ -372,8 +392,7 @@ class Drawing(BaseSheet):
             if not r.text: continue
             if any_match(r.tags, self.disabled_tags): continue
             if toprow.frame or r.frame:
-                if not self.frames: continue
-                if thisframe.id not in [toprow.frame, r.frame]: continue
+                if not self.inFrame(r, [thisframe]): continue
 
             if not (0 <= y < self.windowHeight-1 and 0 <= x < self.windowWidth):  # inside screen
                 continue
@@ -513,7 +532,7 @@ class Drawing(BaseSheet):
 
     @property
     def frameDesc(sheet):
-        return f'Frame {sheet.currentFrame.id} {sheet.cursorFrameIndex}/{sheet.nFrames-1}'
+        return f'Frame {sheet.currentFrame.id} {sheet.cursorFrameIndex}/{max(sheet.nFrames-1, 0)}'
 
     @property
     def cursorCharName(self):
@@ -602,7 +621,7 @@ class Drawing(BaseSheet):
     def checkCursor(self):
         self.cursorBox.x1 = min(self.windowWidth-2, max(0, self.cursorBox.x1))
         self.cursorBox.y1 = min(self.windowHeight-2, max(0, self.cursorBox.y1))
-        self.cursorFrameIndex = min(max(self.cursorFrameIndex, 0), len(self.frames)-1)
+        self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
 
     def end_cursor(self, x, y):
         self.cursorBox.x2 = x+2
@@ -759,8 +778,8 @@ Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag
 Drawing.addCommand('s', 'select-cursor', 'source.select(list(itercursor()))')
 Drawing.addCommand('t', 'toggle-cursor', 'source.toggle(list(itercursor()))')
 Drawing.addCommand('u', 'unselect-cursor', 'source.unselect(list(itercursor()))')
-Drawing.addCommand('gs', 'select-all', 'source.select(source.rows)')
-Drawing.addCommand('gt', 'toggle-all', 'source.toggle(source.rows)')
+Drawing.addCommand('gs', 'select-all', 'source.select(itercursor(frames=source.frames))')
+Drawing.addCommand('gt', 'toggle-all', 'source.toggle(itercursor(frames=source.frames))')
 Drawing.addCommand('gu', 'unselect-all', 'source.clearSelected()')
 Drawing.addCommand('zs', 'select-top-cursor', 'source.select(list(itercursor(n=1)))')
 Drawing.addCommand('zt', 'toggle-top-cursor', 'source.toggle(list(itercursor(n=1)))')
