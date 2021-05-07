@@ -460,7 +460,8 @@ class Drawing(BaseSheet):
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
-        self.draw(self._scr)
+        if self._scr:
+            self.draw(self._scr)
 
     def place_text(self, text, x=None, y=None, dx=0, dy=0):
         'Return (width, height) of drawn text.'
