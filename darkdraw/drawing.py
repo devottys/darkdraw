@@ -238,7 +238,7 @@ class DrawingSheet(JsonSheet):
         return degrouped
 
     def gatherTag(self, gname):
-        return list(r for r in self.rows if gname in r.get('group', ''))
+        return list(r for r in self.rows if gname in r.get('tags', ''))
 
     def slide_top(self, rows, index=0):
         'Move selected rows to top of sheet (bottom of drawing)'
@@ -250,7 +250,7 @@ class DrawingSheet(JsonSheet):
 class Drawing(BaseSheet):
     rowtype = 'elements'  # rowdef: AttrDict (same as DrawingSheet)
     def iterbox(self, box, n=None, frames=None):
-        'Yield top *n* displayed rows from each cell within the given box.'
+        'If *frames* is None, return top *n* elements from each cell within the given box (current frame falling back to base frame).  Otherwise return all elements from each cell within the given box (so base frame + current frame).  Otherwise return all elements that would be displayed in displayed in either If frames is None, uses actually displayed elements; otherwise, '
         ret = list()
         if frames is None:
             for nx in range(box.x1, box.x2-1):
@@ -259,7 +259,6 @@ class Drawing(BaseSheet):
                         if r not in ret:
                             ret.append(r)
         else:
-            assert n is None
             for r in self.rows:
                 if self.inFrame(r, frames):
                     if box.contains(CharBox(None, r.x, r.y, r.w or dispwidth(r.text), r.h or 1)):
@@ -289,6 +288,7 @@ class Drawing(BaseSheet):
         return [r for r in self.rows if self.inFrame(r, frames)]
 
     def inFrame(self, r, frames):
+        'Return True if *r* is an element that would be displayed (even if hidden or buried) in the given set of *frames*.'
         if r.type: return False
         if not r.frame: return True
         if not self.frames: return False
@@ -376,8 +376,11 @@ class Drawing(BaseSheet):
         #draw_guides(self.maxX+1, self.maxY+1)
         guidexy = self.options.disp_guide_xy
         if guidexy:
-            guidex,guidey = map(int, guidexy.split())
-            draw_guides(guidex, guidey)
+            try:
+                guidex,guidey = map(int, guidexy.split())
+                draw_guides(guidex, guidey)
+            except Exception as e:
+                vd.exceptionCaught(e)
 
         # draw blank cursor as backdrop but on top of guides
         for i in range(self.cursorBox.h):
@@ -789,7 +792,7 @@ Drawing.addCommand('zt', 'toggle-top-cursor', 'source.toggle(list(itercursor(n=1
 Drawing.addCommand('zu', 'unselect-top-cursor', 'source.unselect(list(itercursor(n=1)))')
 
 Drawing.addCommand('z00', 'enable-all-groups', 'disabled_tags.clear()')
-for i in range(1, 99):
+for i in range(1, 10):
     Drawing.addCommand('%02d'%i, 'toggle-enabled-group-%s'%i, 'g=list(_tags.keys())[%s]; disabled_tags.remove(g) if g in disabled_tags else disabled_tags.add(g)' %(i-1))
     Drawing.addCommand('g%02d'%i, 'select-group-%s'%i, 'g=list(_tags.keys())[%s]; source.select(source.gatherTag(g))' %(i-1))
     Drawing.addCommand('z%02d'%i, 'unselect-group-%s'%i, 'g=list(_tags.keys())[%s]; source.unselect(source.gatherTag(g))' %(i-1))
@@ -880,7 +883,7 @@ Drawing.addCommand('kDN5', 'resize-cursor-taller', 'sheet.cursorBox.h += 1')
 Drawing.addCommand('gzKEY_LEFT', 'resize-cursor-min-width', 'cursorBox.w = 1')
 Drawing.addCommand('gzKEY_UP', 'resize-cursor-min-height', 'cursorBox.h = 1')
 Drawing.addCommand('z_', 'resize-cursor-min', 'cursorBox.h = cursorBox.w = 1')
-Drawing.addCommand('g_', 'resize-cursor-max', 'cursorBox.x1=cursorBox.y1=0; cursorBox.h=maxY; cursorBox.w=maxX')
+Drawing.addCommand('g_', 'resize-cursor-max', 'cursorBox.x1=cursorBox.y1=0; cursorBox.h=maxY+1; cursorBox.w=maxX+1')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')

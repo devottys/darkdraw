@@ -91,9 +91,9 @@ class UnicodeBrowser(Sheet):
     rowtype='chars' # rowdef: AttrDict(.text=ch)
     precious=False
     columns = [
-        Column('num', fmtstr='%04X', type=int, getter=lambda c,r: ord(r.text)),
+        UnicodeDataColumn('name', width=40),
         Column('text', getter=lambda c,r: unicodedata.normalize('NFC', r.text)),
-        UnicodeDataColumn('name', width=20),
+        Column('num', fmtstr='%04X', type=int, getter=lambda c,r: ord(r.text)),
         UnicodeDataColumn('category'),
 #        UnicodeDataColumn('decimal'),
 #        UnicodeDataColumn('digit'),
