@@ -798,7 +798,7 @@ for i in range(1, 10):
     Drawing.addCommand('z%02d'%i, 'unselect-group-%s'%i, 'g=list(_tags.keys())[%s]; source.unselect(source.gatherTag(g))' %(i-1))
 
 
-Drawing.addCommand('A', 'new-drawing', 'vd.push(Drawing("untitled", source=DrawingSheet("", source=Path("untitled.ddw"))))')
+Drawing.addCommand('A', 'new-drawing', 'vd.push(Drawing("untitled", source=DrawingSheet("untitled")))')
 Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)')
 Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)')
 DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)')
