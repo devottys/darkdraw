@@ -578,7 +578,10 @@ class Drawing(BaseSheet):
             self.cursorBox.y1 -= 1
 
     def go_pagedown(self, n):
-        self.cursorBox.y1 = self.windowHeight-2
+        if n < 0:
+            self.cursorBox.y1 = 0
+        else:
+            self.cursorBox.y1 = self.windowHeight-2
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
