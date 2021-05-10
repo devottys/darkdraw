@@ -599,6 +599,10 @@ class Drawing(BaseSheet):
         elif self.pendir == 'l': self.cursorBox.x1 -= x
 
     def slide_selected(self, dx, dy):
+        maxX, maxY = self.windowWidth, self.windowHeight
+        x1, y1, x2, y2 = bounding_box(self.source.someSelectedRows)
+        dx = -x1 if x1+dx < 0 else (maxX-x2-1 if x2+dx > maxX-1 else dx)
+        dy = -y1 if y1+dy < 0 else (maxY-y2-1 if y2+dy > maxY-1 else dy)
         for r in self.source.someSelectedRows:
             if 'x' in r:
                 oldx = copy(r['x'])
@@ -767,6 +771,11 @@ Drawing.addCommand('H', 'slide-left-obj', 'slide_selected(-1, 0)')
 Drawing.addCommand('J', 'slide-down-obj', 'slide_selected(0, +1)')
 Drawing.addCommand('K', 'slide-up-obj', 'slide_selected(0, -1)')
 Drawing.addCommand('L', 'slide-right-obj', 'slide_selected(+1, 0)')
+
+Drawing.addCommand('gH', 'slide-leftmost-obj', 'slide_selected(-maxX, 0)')
+Drawing.addCommand('gJ', 'slide-bottom-obj', 'slide_selected(0, +maxY)')
+Drawing.addCommand('gK', 'slide-top-obj', 'slide_selected(0, -maxY)')
+Drawing.addCommand('gL', 'slide-rightmost-obj', 'slide_selected(+maxX, 0)')
 
 Drawing.addCommand('g)', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
 Drawing.addCommand('g(', 'degroup-selected-temp', 'degrouped = sheet.degroup(source.someSelectedRows); source.clearSelected(); source.select(degrouped)')
