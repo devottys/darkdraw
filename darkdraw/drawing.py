@@ -246,6 +246,9 @@ class DrawingSheet(JsonSheet):
             self.rows.pop(self.rows.index(r))
             self.rows.insert(index, r)
 
+    def sort(self):
+        vd.fail('sort disabled on drawing sheet')
+
 
 class Drawing(BaseSheet):
     rowtype = 'elements'  # rowdef: AttrDict (same as DrawingSheet)
@@ -739,9 +742,6 @@ Drawing.addCommand('g[', 'first-frame', 'sheet.cursorFrameIndex = 0')
 Drawing.addCommand('g]', 'last-frame', 'sheet.cursorFrameIndex = sheet.nFrames-1')
 Drawing.addCommand('z[', 'new-frame-before', 'sheet.new_between_frame(sheet.cursorFrameIndex-1, sheet.cursorFrameIndex)')
 Drawing.addCommand('z]', 'new-frame-after', 'sheet.new_between_frame(sheet.cursorFrameIndex, sheet.cursorFrameIndex+1); sheet.cursorFrameIndex += 1')
-
-DrawingSheet.unbindkey('[')  # dangerous
-DrawingSheet.unbindkey(']')
 
 Drawing.addCommand('g^^', 'jump-first', 'vd.activeStack.append(vd.activeStack.pop(0))', 'jump to first sheet')
 Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
