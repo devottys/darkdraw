@@ -1,7 +1,7 @@
 import itertools
 import curses
 
-from visidata import vd, colors
+from visidata import vd, colors, CharBox
 from wcwidth import wcswidth
 
 def wc_rjust(text, length, padding=' '):
@@ -13,57 +13,6 @@ def wc_center(text, length, padding=' '):
 
 def wc_ljust(text, length, padding=' '):
     return text + padding * max(0, (length - wcswidth(text)))
-
-
-class CharBox:
-    def __init__(self, scr=None, x1=0, y1=0, w=None, h=None):
-        scrh, scrw = scr.getmaxyx() if scr else (25, 80)
-        self.scr = scr
-        self.x1 = x1
-        self.y1 = y1
-        self.w = scrw if w is None else w
-        self.h = scrh if h is None else h
-
-        self.normalize()
-
-    def __str__(self):
-        return f'({self.x1}+{self.w},{self.y1}+{self.h})'
-
-    def normalize(self):
-        'Make sure w and h are non-negative, swapping coordinates as needed.'
-        if self.w < 0:
-            self.x1 += self.w
-            self.w = -self.w
-
-        if self.h < 0:
-            self.y1 += self.h
-            self.h = -self.h
-
-    @property
-    def x2(self):
-        return self.x1+self.w+1
-
-    @x2.setter
-    def x2(self, v):
-        self.w = v-self.x1-1
-        self.normalize()
-
-    @property
-    def y2(self):
-        return self.y1+self.h+1
-
-    @y2.setter
-    def y2(self, v):
-        self.h = v-self.y1-1
-        self.normalize()
-
-    def contains(self, b):
-        'Return True if this box contains any part of the given x,y,w,h.'
-        xA = max(self.x1, b.x1)  # left
-        xB = min(self.x2, b.x2)  # right
-        yA = max(self.y1, b.y1)  # top
-        yB = min(self.y2, b.y2)  # bottom
-        return xA < xB-1 and yA < yB-1   # xA+.5 < xB-.5 and yA+.5 < yB-.5
 
 
 class DrawableBox(CharBox):

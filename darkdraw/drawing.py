@@ -3,7 +3,7 @@ import random
 import time
 import unicodedata
 from visidata import *
-from .box import CharBox
+from visidata import CharBox, boundingBox
 
 
 vd.allPrefixes += list('01')
@@ -31,18 +31,6 @@ def words(vd):
 @VisiData.api
 def random_word(vd):
     return random.choice(vd.words)
-
-def bounding_box(rows):
-    'Return (xmin, ymin, xmax, ymax) of rows.'
-    xmin, ymin, xmax, ymax = 9999, 9999, 0, 0
-    for r in rows:
-        if r.x is not None:
-            xmin = min(xmin, r.x)
-            xmax = max(xmax, r.x + (r.w or dispwidth(r.text or '')))
-        if r.y is not None:
-            ymin = min(ymin, r.y)
-            ymax = max(ymax, r.y + (r.h or 0))
-    return xmin, ymin, xmax, ymax
 
 def any_match(G1, G2):
     if G1 and G2:
@@ -168,7 +156,7 @@ class DrawingSheet(JsonSheet):
         nr = self.create_group(gname)
 
         nr.rows = deepcopy(self.selectedRows)
-        x1, y1, x2, y2 = bounding_box(nr.rows)
+        x1, y1, x2, y2 = boundingBox(nr.rows)
         nr.x, nr.y, nr.w, nr.h = x1, y1, x2-x1, y2-y1
         for r in nr.rows:
             r.x = (r.x or 0) - x1
@@ -250,7 +238,7 @@ class DrawingSheet(JsonSheet):
         vd.fail('sort disabled on drawing sheet')
 
 
-class Drawing(BaseSheet):
+class Drawing(TextCanvas):
     rowtype = 'elements'  # rowdef: AttrDict (same as DrawingSheet)
     def iterbox(self, box, n=None, frames=None):
         'If *frames* is None, return top *n* elements from each cell within the given box (current frame falling back to base frame).  Otherwise return all elements from each cell within the given box (so base frame + current frame).  Otherwise return all elements that would be displayed in displayed in either If frames is None, uses actually displayed elements; otherwise, '
@@ -268,14 +256,6 @@ class Drawing(BaseSheet):
                         ret.append(r)
 
         return ret
-
-    @property
-    def rows(self):
-        return self.source.rows
-
-    @rows.setter
-    def rows(self, v):
-        pass
 
     def __getattr__(self, k):
         return getattr(self.source, k)
@@ -297,11 +277,6 @@ class Drawing(BaseSheet):
         if not self.frames: return False
         return any(r.frame == f.id for f in frames)
 
-    def commandCursor(self, execstr):
-        if 'cursor' in execstr:
-            return '%s %s' % (self.cursorBox.x1, self.cursorBox.x2), '%s %s' % (self.cursorBox.y1, self.cursorBox.y2)
-        return '', ''
-
     def moveToRow(self, rowstr):
         self.refresh()
         a, b = map(int, rowstr.split())
@@ -315,7 +290,7 @@ class Drawing(BaseSheet):
         return True
 
     def itercursor(self, n=None, frames=None):
-        return self.iterbox(self.cursorBox, n=n, frames=frames or [self.currentFrame])
+        return self.iterbox(self.cursorBox, n=n, frames=frames)
 
     def refresh(self):
         self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
@@ -363,7 +338,7 @@ class Drawing(BaseSheet):
 
         selectedGroups = set()  # any group with a selected element
 
-        self.minX, self.minY, self.maxX, self.maxY = bounding_box(self.source.rows)
+        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
 
         def draw_guides(xmax, ymax):
             if ymax < self.windowHeight-1:
@@ -601,21 +576,6 @@ class Drawing(BaseSheet):
         elif self.pendir == 'r': self.cursorBox.x1 += x
         elif self.pendir == 'l': self.cursorBox.x1 -= x
 
-    def slide_selected(self, dx, dy):
-        maxX, maxY = self.windowWidth, self.windowHeight
-        x1, y1, x2, y2 = bounding_box(self.source.someSelectedRows)
-        dx = -x1 if x1+dx < 0 else (maxX-x2-1 if x2+dx > maxX-1 else dx)
-        dy = -y1 if y1+dy < 0 else (maxY-y2-1 if y2+dy > maxY-1 else dy)
-        for r in self.source.someSelectedRows:
-            if 'x' in r:
-                oldx = copy(r['x'])
-                r['x'] += dx
-                vd.addUndo(setattr, r, 'x', oldx)
-            if 'y' in r:
-                oldy = copy(r['y'])
-                r['y'] += dy
-                vd.addUndo(setattr, r, 'y', oldy)
-
     def go_obj(self, xdir=0, ydir=0):
         x=self.cursorBox.x1
         y=self.cursorBox.y1
@@ -635,14 +595,8 @@ class Drawing(BaseSheet):
             y += ydir
 
     def checkCursor(self):
-        self.cursorBox.x1 = min(self.windowWidth-2, max(0, self.cursorBox.x1))
-        self.cursorBox.y1 = min(self.windowHeight-2, max(0, self.cursorBox.y1))
+        super().checkCursor()
         self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
-
-    def end_cursor(self, x, y):
-        self.cursorBox.x2 = x+2
-        self.cursorBox.y2 = y+2
-        self.cursorBox.normalize()
 
     def join_rows(dwg, rows):
         vd.addUndo(setattr, rows[0], 'text', rows[0].text)
@@ -658,7 +612,7 @@ class Drawing(BaseSheet):
 
         newrows = []
         npasted = 0
-        x1, y1, x2, y2 = bounding_box(srcrows)
+        x1, y1, x2, y2 = boundingBox(srcrows)
         for oldr in srcrows:
             if oldr.x is None:
                 newx = self.cursorBox.x1
@@ -737,9 +691,6 @@ Drawing.addCommand('', 'pen-down', 'sheet.pendir="d"', '')
 Drawing.addCommand('', 'pen-up', 'sheet.pendir="u"', '')
 Drawing.addCommand('', 'pen-right', 'sheet.pendir="r"', '')
 
-Drawing.addCommand('BUTTON1_PRESSED', 'move-cursor', 'sheet.cursorBox = CharBox(None, mouseX, mouseY, 1, 1)', 'start cursor box with left mouse button press')
-Drawing.addCommand('BUTTON1_RELEASED', 'end-cursor', 'end_cursor(mouseX, mouseY)', 'end cursor box with left mouse button release')
-
 Drawing.addCommand('', 'align-x-selected', 'align_selected("x")')
 
 Drawing.addCommand('F', 'open-frames', 'vd.push(FramesSheet(sheet, "frames", source=sheet, rows=sheet.frames, cursorRowIndex=sheet.cursorFrameIndex))')
@@ -750,7 +701,6 @@ Drawing.addCommand('g]', 'last-frame', 'sheet.cursorFrameIndex = sheet.nFrames-1
 Drawing.addCommand('z[', 'new-frame-before', 'sheet.new_between_frame(sheet.cursorFrameIndex-1, sheet.cursorFrameIndex)')
 Drawing.addCommand('z]', 'new-frame-after', 'sheet.new_between_frame(sheet.cursorFrameIndex, sheet.cursorFrameIndex+1); sheet.cursorFrameIndex += 1')
 
-Drawing.addCommand('g^^', 'jump-first', 'vd.activeStack.append(vd.activeStack.pop(0))', 'jump to first sheet')
 Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
 Drawing.addCommand('gKEY_END', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
 Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
@@ -770,16 +720,6 @@ Drawing.addCommand('zj', 'go-down-obj', 'go_obj(0, +1)')
 Drawing.addCommand('zk', 'go-up-obj', 'go_obj(0, -1)')
 Drawing.addCommand('zl', 'go-right-obj', 'go_obj(+1, 0)')
 
-Drawing.addCommand('H', 'slide-left-obj', 'slide_selected(-1, 0)')
-Drawing.addCommand('J', 'slide-down-obj', 'slide_selected(0, +1)')
-Drawing.addCommand('K', 'slide-up-obj', 'slide_selected(0, -1)')
-Drawing.addCommand('L', 'slide-right-obj', 'slide_selected(+1, 0)')
-
-Drawing.addCommand('gH', 'slide-leftmost-obj', 'slide_selected(-maxX, 0)')
-Drawing.addCommand('gJ', 'slide-bottom-obj', 'slide_selected(0, +maxY)')
-Drawing.addCommand('gK', 'slide-top-obj', 'slide_selected(0, -maxY)')
-Drawing.addCommand('gL', 'slide-rightmost-obj', 'slide_selected(+maxX, 0)')
-
 Drawing.addCommand('g)', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
 Drawing.addCommand('g(', 'degroup-selected-temp', 'degrouped = sheet.degroup(source.someSelectedRows); source.clearSelected(); source.select(degrouped)')
 Drawing.addCommand('gz(', 'degroup-selected-perm', 'sheet.degroup_all()')
@@ -793,15 +733,8 @@ Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(
 Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
 Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
 
-Drawing.addCommand('s', 'select-cursor', 'source.select(list(itercursor()))')
-Drawing.addCommand('t', 'toggle-cursor', 'source.toggle(list(itercursor()))')
-Drawing.addCommand('u', 'unselect-cursor', 'source.unselect(list(itercursor()))')
 Drawing.addCommand('gs', 'select-all', 'source.select(itercursor(frames=source.frames))')
 Drawing.addCommand('gt', 'toggle-all', 'source.toggle(itercursor(frames=source.frames))')
-Drawing.addCommand('gu', 'unselect-all', 'source.clearSelected()')
-Drawing.addCommand('zs', 'select-top-cursor', 'source.select(list(itercursor(n=1)))')
-Drawing.addCommand('zt', 'toggle-top-cursor', 'source.toggle(list(itercursor(n=1)))')
-Drawing.addCommand('zu', 'unselect-top-cursor', 'source.unselect(list(itercursor(n=1)))')
 
 Drawing.addCommand('z00', 'enable-all-groups', 'disabled_tags.clear()')
 for i in range(1, 10):
@@ -854,6 +787,7 @@ def set_color(self, color):
         r.color = color
         vd.addUndo(setattr, r, 'color', oldcolor)
 
+
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)')
 Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
@@ -868,8 +802,6 @@ Drawing.addCommand('g+', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows,
 Drawing.addCommand('+', 'tag-cursor', 'sheet.tag_rows(sheet.cursorRows, vd.input("tag cursor as: ", type="tag"))')
 Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, vd.input("tag top of cursor as: ", type="tag"))')
 
-Drawing.addCommand(ENTER, 'dive-cursor', 'vd.push(DrawingSheet(source=sheet, rows=cursorRows))')
-Drawing.addCommand('g'+ENTER, 'dive-selected', 'vd.push(DrawingSheet(source=sheet, rows=source.selectedRows))')
 Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
 Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row)) or fail("no next selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to next selected row'),
 Drawing.addCommand('z'+ENTER, 'dive-cursor-group', 'vd.push(DrawingSheet(source=sheet, rows=rows_by_group(cursorRow["group"])))')
@@ -885,16 +817,6 @@ Drawing.addCommand('m', 'swap-mark', '(cursorBox.x1, cursorBox.y1), sheet.mark=s
 Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+1)%3')
 Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
-
-Drawing.addCommand('kRIT5', 'resize-cursor-wider', 'sheet.cursorBox.w += 1')
-Drawing.addCommand('kLFT5', 'resize-cursor-thinner', 'sheet.cursorBox.w -= 1')
-Drawing.addCommand('kUP5', 'resize-cursor-shorter', 'sheet.cursorBox.h -= 1')
-Drawing.addCommand('kDN5', 'resize-cursor-taller', 'sheet.cursorBox.h += 1')
-
-Drawing.addCommand('gzKEY_LEFT', 'resize-cursor-min-width', 'cursorBox.w = 1')
-Drawing.addCommand('gzKEY_UP', 'resize-cursor-min-height', 'cursorBox.h = 1')
-Drawing.addCommand('z_', 'resize-cursor-min', 'cursorBox.h = cursorBox.w = 1')
-Drawing.addCommand('g_', 'resize-cursor-max', 'cursorBox.x1=cursorBox.y1=0; cursorBox.h=maxY+1; cursorBox.w=maxX+1')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
