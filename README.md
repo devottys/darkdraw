@@ -71,6 +71,27 @@ DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There a
     from darkdraw import *
 ```
 
+### Use existing Dockerfile (default opens with a tutorial)
+
+0. Clone the darkdraw directory
+
+```
+git clone https://github.com/devottys/darkdraw.git
+cd darkdraw
+```
+
+1. Build the Docker image
+
+```
+docker build -t darkdraw .
+```
+
+2. Then whenever you want to run darkdraw with its tutorial
+
+```
+docker run --rm -it darkdraw
+```
+
 ## Usage
 
 Darkdraw is a VisiData plugin, to use the darkdraw loader with a new project, have VisiData open a new filetype with the suffix `*.ddw`.
