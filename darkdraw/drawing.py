@@ -746,12 +746,13 @@ for i in range(1, 10):
 Drawing.addCommand('A', 'new-drawing', 'vd.push(vd.new_ddw(Path(vd.random_word()+".ddw")))')
 Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)')
 Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)')
-DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)')
+DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)', 'push backing table of drawing elements')
 
 Drawing.addCommand('^G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDesc}> {sheet.cursorCharName}")')
 DrawingSheet.addCommand(ENTER, 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
 DrawingSheet.addCommand('g'+ENTER, 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
 Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)')
+
 
 @Drawing.api
 def flip_horiz(sheet, box):
@@ -843,3 +844,15 @@ Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows}
 Drawing.class_options.quitguard='modified'
 Drawing.class_options.null_value=''
 DrawingSheet.class_options.null_value=''
+
+Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
+BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))')
+
+vd.addMenuItem('Sheet', 'New drawing', 'new-drawing')
+vd.addMenuItem('View', 'Drawing table', 'open-drawing')
+vd.addMenuItem('Help', 'DarkDraw tutorial', 'open-tutorial-darkdraw')
+
+vd.addMenu(Menu('DarkDraw',
+    Menu('Unicode browser', 'open-unicode'),
+    Menu('Add text', 'add-input'),
+))
