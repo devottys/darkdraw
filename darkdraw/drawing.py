@@ -445,10 +445,9 @@ class Drawing(TextCanvas):
         if self._scr:
             self.draw(self._scr)
 
-    def place_text(self, text, x=None, y=None, dx=0, dy=0):
+    def place_text(self, text, box, dx=0, dy=0):
         'Return (width, height) of drawn text.'
-        if x is None: x = self.cursorBox.x1
-        if y is None: y = self.cursorBox.y1
+        x, y = box.x1, box.y1
         r = self.newRow()
         r.x, r.y, r.text = x, y, text
         r.frame = self.currentFrame.id
@@ -464,7 +463,7 @@ class Drawing(TextCanvas):
 
     def edit_text(self, text, row):
         if row is None:
-            self.place_text(text, dx=1)
+            self.place_text(text, self.cursorBox, dx=1)
             return
         oldtext = row.text
         row.text = text
@@ -528,28 +527,28 @@ class Drawing(TextCanvas):
     def go_left(self):
         if self.options.pen_down:
             self.pendir = 'l'
-            self.place_text(ch, self.cursorBox.x1, self.cursorBox.y1, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
         else:
             self.cursorBox.x1 -= 1
 
     def go_right(self):
         if self.options.pen_down:
             self.pendir = 'r'
-            self.place_text(ch, self.cursorBox.x1, self.cursorBox.y1, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
         else:
             self.cursorBox.x1 += 1
 
     def go_down(self):
         if self.options.pen_down:
             self.pendir = 'd'
-            self.place_text(ch, self.cursorBox.x1, self.cursorBox.y1, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
         else:
             self.cursorBox.y1 += 1
 
     def go_up(self):
         if self.options.pen_down:
             self.pendir = 'u'
-            self.place_text(ch, self.cursorBox.x1, self.cursorBox.y1, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
         else:
             self.cursorBox.y1 -= 1
 
@@ -706,7 +705,7 @@ Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.s
 Drawing.addCommand('gKEY_END', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
 Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
 Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()')
-Drawing.addCommand('a', 'add-input', 'place_text(input("text: ", value=get_text()), dx=1)')
+Drawing.addCommand('a', 'add-input', 'place_text(input("text: ", value=get_text()), cursorBox, dx=1)')
 Drawing.addCommand('e', 'edit-char', 'edit_text(input("text: ", value=get_text()), cursorRow)')
 Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
 Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
