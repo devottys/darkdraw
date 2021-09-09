@@ -704,8 +704,8 @@ Drawing.addCommand('z]', 'new-frame-after', 'sheet.new_between_frame(sheet.curso
 Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
 Drawing.addCommand('gKEY_END', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
 Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
-Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()')
-Drawing.addCommand('a', 'add-input', 'place_text(input("text: ", value=get_text()), cursorBox, dx=1)')
+Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete selected rows on source sheet')
+Drawing.addCommand('a', 'add-input', 'place_text(input("text: ", value=get_text()), cursorBox, dx=1)', 'place text string at cursor')
 Drawing.addCommand('e', 'edit-char', 'edit_text(input("text: ", value=get_text()), cursorRow)')
 Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
 Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
@@ -729,6 +729,7 @@ DrawingSheet.addCommand('g(', 'degroup-selected-perm', 'sheet.degroup_all()')
 DrawingSheet.addCommand('gz(', 'degroup-selected-temp', 'degroup = sheet.degroup(someSelectedRows); clearSelected(); select(degrouped)')
 DrawingSheet.addCommand('gz)', 'regroup-selected', 'sheet.regroup(someSelectedRows)')
 
+Drawing.addCommand('zs', 'select-cursor-top', 'source.select(list(source.gatherBy(lambda r,b=cursorBox: b.contains(r))))')
 Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(lambda r,ch=cursorChar: r.text==ch)))')
 Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
 Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
@@ -742,15 +743,15 @@ for i in range(1, 10):
     Drawing.addCommand('g%02d'%i, 'select-group-%s'%i, 'g=list(_tags.keys())[%s]; source.select(source.gatherTag(g))' %(i-1))
     Drawing.addCommand('z%02d'%i, 'unselect-group-%s'%i, 'g=list(_tags.keys())[%s]; source.unselect(source.gatherTag(g))' %(i-1))
 
-Drawing.addCommand('A', 'new-drawing', 'vd.push(vd.new_ddw(Path(vd.random_word()+".ddw")))')
-Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)')
-Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)')
-DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)', 'push backing table of drawing elements')
+Drawing.addCommand('A', 'new-drawing', 'vd.push(vd.new_ddw(Path(vd.random_word()+".ddw")))', 'open blank drawing')
+Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)', 'open unicode character table')
+Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)', 'push backing sheet for this drawing')
+DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)', 'push drawing for this backing sheet')
 
 Drawing.addCommand('^G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDesc}> {sheet.cursorCharName}")')
 DrawingSheet.addCommand(ENTER, 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
 DrawingSheet.addCommand('g'+ENTER, 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
-Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)')
+Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join selected objects into one text object')
 
 
 @Drawing.api
@@ -845,13 +846,10 @@ Drawing.class_options.null_value=''
 DrawingSheet.class_options.null_value=''
 
 Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
-BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))')
+BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
 
-vd.addMenuItem('Sheet', 'New drawing', 'new-drawing')
+vd.addMenuItem('File', 'New drawing', 'new-drawing')
+vd.addMenuItem('View', 'Unicode browser', 'open-unicode')
 vd.addMenuItem('View', 'Drawing table', 'open-drawing')
 vd.addMenuItem('Help', 'DarkDraw tutorial', 'open-tutorial-darkdraw')
-
-vd.addMenu(Menu('DarkDraw',
-    Menu('Unicode browser', 'open-unicode'),
-    Menu('Add text', 'add-input'),
-))
+vd.addMenuItem('Edit', 'Add text', 'add-input')
