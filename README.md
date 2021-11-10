@@ -109,10 +109,17 @@ To start, you can play with some of the samples:
     vd https://bluebird.sh/ddw/bw16colors.ddw
 ```
 
+or with the tutorial:
+
+```
+vd https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw
+```
+
 If pulling from the url does not work, try downloading the file, and then:
 
 ```
 vd colors.ddw
+vd darkdraw-tutorial.ddw
 ```
 
 ![faerie fire](dwimmer_faerie-fire.gif)
