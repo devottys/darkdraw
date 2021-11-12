@@ -1,4 +1,5 @@
 from unittest import mock
+from collections import defaultdict
 import random
 import time
 import unicodedata
