@@ -239,6 +239,23 @@ class DrawingSheet(JsonSheet):
     def sort(self):
         vd.fail('sort disabled on drawing sheet')
 
+    def save_txt(self, p, *sheets):
+        dwg = self.drawing
+        dwg.draw(None)
+        with p.open_text(mode='w') as fp:
+            for vs in sheets:
+                line = ''
+                for y in range(dwg.maxY+1):
+                    for x in range(dwg.maxX+1):
+                        ch = dwg.get_text(x, y)
+                        line += ch if ch else ' '
+                    line = line.rstrip(' ') + '\n'
+
+                    if line.strip():
+                        fp.write(line)
+                        line = ''
+                    # if only newlines, let it ride
+
 
 class Drawing(TextCanvas):
     rowtype = 'elements'  # rowdef: AttrDict (same as DrawingSheet)
@@ -377,9 +394,6 @@ class Drawing(TextCanvas):
             if toprow.frame or r.frame:
                 if not self.inFrame(r, [thisframe]): continue
 
-            if not (0 <= y < self.windowHeight-1 and 0 <= x < self.windowWidth):  # inside screen
-                continue
-
             c = r.color or ''
             if self.cursorBox.contains(CharBox(scr, x, y, r.w or dispwidth(r.text), r.h or 1)):
                 c = self.options.color_current_row + ' ' + str(c)
@@ -387,8 +401,11 @@ class Drawing(TextCanvas):
                 c = self.options.color_selected_row + ' ' + str(c)
                 if r.tags: selectedGroups |= set(r.tags)
             a = colors[c]
-            w = clipdraw(scr, y, x, r.text, a)
-            for i in range(0, w):
+
+            if (0 <= y < self.windowHeight-1 and 0 <= x < self.windowWidth):  # inside screen
+                w = clipdraw(scr, y, x, r.text, a)
+
+            for i in range(0, dispwidth(r.text)):
                 cellrows = self._displayedRows[(x+i, y)]
                 if toprow not in cellrows:
                     cellrows.append(toprow)
@@ -477,7 +494,7 @@ class Drawing(TextCanvas):
         if y is None: y = self.cursorBox.y1
         r = self._displayedRows.get((x,y), None)
         if not r: return ''
-        return r[-1]['text']
+        return r[-1]['text'][x-r[-1].x]
 
     def remove_at(self, box):
         rows = list(self.iterbox(box))
