@@ -247,8 +247,9 @@ class DrawingSheet(JsonSheet):
                 line = ''
                 for y in range(dwg.maxY+1):
                     for x in range(dwg.maxX+1):
-                        ch = dwg.get_text(x, y)
-                        line += ch if ch else ' '
+                        r = dwg._displayedRows.get((x,y), None)
+                        if r: line += r[-1].text[x-r[-1].x]
+                        else: line += ' '
                     line = line.rstrip(' ') + '\n'
 
                     if line.strip():
@@ -723,8 +724,20 @@ Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.s
 Drawing.addCommand('gKEY_END', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
 Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
 Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete selected rows on source sheet')
-Drawing.addCommand('a', 'add-input', 'place_text(editText(cursorBox.y1, cursorBox.x1, windowWidth-cursorBox.x1, value=get_text()), cursorBox, dx=1)', 'place text string at cursor')
-Drawing.addCommand('e', 'edit-char', 'edit_text(editText(cursorBox.y1, cursorBox.x1, windowWidth-cursorBox.x1, value=get_text()), cursorRow)')
+
+@Drawing.api
+def input_canvas(sheet, box, row=None):
+    x = row.x
+    y = row.y
+    kwargs = {}
+    if row:
+        kwargs['value'] = row.text
+        kwargs['i'] = box.x1-row.x
+
+    return vd.editText(y, x, sheet.windowWidth-x, **kwargs)
+
+Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, cursorRow))', 'place text string at cursor')
+Drawing.addCommand('e', 'edit-text', 'r=cursorRow; edit_text(input_canvas(cursorBox, r), r)')
 Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
 Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
 Drawing.addCommand('gy', 'yank-selected', 'sheet.copyRows(sheet.selectedRows)')
