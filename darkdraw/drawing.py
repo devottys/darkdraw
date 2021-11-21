@@ -734,7 +734,7 @@ def input_canvas(sheet, box, row=None):
         kwargs['value'] = row.text
         kwargs['i'] = box.x1-row.x
 
-    return vd.editText(y, x, sheet.windowWidth-x, **kwargs)
+    return vd.editText(y, x, sheet.windowWidth-x, fillchar='', clear=False, **kwargs)
 
 Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, cursorRow))', 'place text string at cursor')
 Drawing.addCommand('e', 'edit-text', 'r=cursorRow; edit_text(input_canvas(cursorBox, r), r)')
