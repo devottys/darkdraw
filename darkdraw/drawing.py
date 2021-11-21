@@ -727,16 +727,17 @@ Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete s
 
 @Drawing.api
 def input_canvas(sheet, box, row=None):
-    x = row.x
-    y = row.y
     kwargs = {}
     if row:
+        x, y = row.x, row.y
         kwargs['value'] = row.text
         kwargs['i'] = box.x1-row.x
+    else:
+        x, y = box.x1, box.y1
 
     return vd.editText(y, x, sheet.windowWidth-x, fillchar='', clear=False, **kwargs)
 
-Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, cursorRow))', 'place text string at cursor')
+Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, None), cursorBox)', 'place text string at cursor')
 Drawing.addCommand('e', 'edit-text', 'r=cursorRow; edit_text(input_canvas(cursorBox, r), r)')
 Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
 Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
