@@ -323,7 +323,10 @@ class Drawing(TextCanvas):
         return self.iterbox(self.cursorBox, n=n, frames=frames)
 
     def refresh(self):
-        self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
+        'Clear and redraw the existing screen.'
+        if not self._scr:
+            self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
+        self._scr.clear()
         self.draw(self._scr)
 
     def autosave(self):
