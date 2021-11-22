@@ -848,7 +848,6 @@ Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, v
 
 Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
 Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row)) or fail("no next selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to next selected row'),
-Drawing.addCommand('z'+ENTER, 'dive-cursor-group', 'vd.push(DrawingSheet(source=sheet, rows=rows_by_group(cursorRow["group"])))')
 Drawing.addCommand('z^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor_top", source=cursorRow))')
 Drawing.addCommand('^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor", source=cursorRows))')
 
