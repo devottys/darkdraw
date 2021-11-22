@@ -139,12 +139,12 @@ This list can be used directly and is called the 'backing sheet'.
 - `Enter` (dive-cursor): push backing subsheet with only rows under the cursor
   - Note: edits to rows on any backing subsheets will be applied directly, but deleting rows or adding new rows will have no effect.  Any adding, deleting, or reordering must be done from the top sheet.
 - `g Enter` (dive-selected): push backing sheet with all selected rows.
-- `z Enter` (dive-cursor-group): push backing sheet with rows in the group(s) under the cursor.
 
 ### Movement
 
 - `zh` `zj` `zk` `zl`: move the cursor to the next object in that direction.  Useful for sparse areas.
 - `g` Arrow (or `gh/gj/gk/gl`): move all the way to the left/bottom/top/right of the drawing
+- `PgUp` `PgDown` move the viewport up/down the Drawing; for Drawings bigger than the visible screen
 
 ### Cursor
 
