@@ -85,7 +85,7 @@ class DrawingSheet(JsonSheet):
 
     @functools.cached_property
     def drawing(self):
-        return Drawing(self.name, source=self)
+        return Drawing(self.name+".ddw", source=self)
 
     def addRow(self, row, **kwargs):
         row = super().addRow(row, **kwargs)
