@@ -94,15 +94,18 @@ class DrawingSheet(JsonSheet):
 
     def iterdeep(self, rows, x=0, y=0, parents=None):
         for r in rows:
-            newparents = (parents or []) + [r]
-            if r.type == 'frame': continue
-            if r.ref:
-                assert r.type == 'ref'
-                g = self.groups[r.ref]
-                yield from self.iterdeep(g.rows, x+r.x, y+r.y, newparents)
-            else:
-                yield r, x+r.x, y+r.y, newparents
-                yield from self.iterdeep(r.rows or [], x+r.x, x+r.y, newparents)
+            try:
+                newparents = (parents or []) + [r]
+                if r.type == 'frame': continue
+                if r.ref:
+                    assert r.type == 'ref'
+                    g = self.groups[r.ref]
+                    yield from self.iterdeep(g.rows, x+r.x, y+r.y, newparents)
+                else:
+                    yield r, x+r.x, y+r.y, newparents
+                    yield from self.iterdeep(r.rows or [], x+r.x, x+r.y, newparents)
+            except Exception as e:
+                vd.exceptionCaught(e)
 
     def tag_rows(self, rows, tagstr):
         tags = tagstr.split()
