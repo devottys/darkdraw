@@ -771,7 +771,7 @@ DrawingSheet.addCommand('g(', 'degroup-selected-perm', 'sheet.degroup_all()')
 DrawingSheet.addCommand('gz(', 'degroup-selected-temp', 'degroup = sheet.degroup(someSelectedRows); clearSelected(); select(degrouped)')
 DrawingSheet.addCommand('gz)', 'regroup-selected', 'sheet.regroup(someSelectedRows)')
 
-Drawing.addCommand('zs', 'select-cursor-top', 'source.select(list(source.gatherBy(lambda r,b=cursorBox: b.contains(r))))')
+Drawing.addCommand('zs', 'select-top', 'select_top(cursorBox)')
 Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(lambda r,ch=cursorChar: r.text==ch)))')
 Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
 Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
@@ -830,6 +830,17 @@ def set_color(self, color):
         oldcolor = copy(r.color)
         r.color = color
         vd.addUndo(setattr, r, 'color', oldcolor)
+
+@Drawing.api
+def select_top(sheet, box):
+    r = []
+    for x in range(box.x1, box.x2-1):
+        for y in range(box.y1, box.y2-1):
+            vd.status(x,y)
+            rows = sheet._displayedRows[(x,y)]
+            if rows:
+                r.append(rows[-1])
+    sheet.select(r)
 
 
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
