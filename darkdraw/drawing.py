@@ -372,6 +372,10 @@ class Drawing(TextCanvas):
         selectedGroups = set()  # any group with a selected element
 
         self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
+        self.yoffset = max(self.yoffset, 0)
+        self.xoffset = max(self.xoffset, 0)
+        self.yoffset = min(self.yoffset, self.maxY+1)
+        self.xoffset = min(self.xoffset, self.maxX+1)
 
         def draw_guides(xmax, ymax):
             if ymax < self.windowHeight-1:
@@ -396,9 +400,13 @@ class Drawing(TextCanvas):
         # draw blank cursor as backdrop but on top of guides
         for i in range(self.cursorBox.h):
             for j in range(self.cursorBox.w):
-                clipdraw(scr, self.cursorBox.y1+i, self.cursorBox.x1+j, ' ', colors.color_current_row)
+                y = self.cursorBox.y1+i-self.yoffset
+                x = self.cursorBox.x1+j-self.xoffset
+                clipdraw(scr, y, x, ' ', colors.color_current_row)
 
         for r, x, y, parents in self.iterdeep(self.source.rows):
+            sy = y - self.yoffset
+            sx = x - self.xoffset
             toprow = parents[0]
             for g in (r.tags or []):
                 self._tags[g].append(r)
@@ -416,8 +424,8 @@ class Drawing(TextCanvas):
                 if r.tags: selectedGroups |= set(r.tags)
             a = colors[c]
 
-            if (0 <= y < self.windowHeight-1 and 0 <= x < self.windowWidth):  # inside screen
-                w = clipdraw(scr, y, x, r.text, a)
+            if (0 <= sy < self.windowHeight-1 and 0 <= sx < self.windowWidth):  # inside screen
+                w = clipdraw(scr, sy, sx, r.text, a)
 
             for i in range(0, dispwidth(r.text)):
                 cellrows = self._displayedRows[(x+i, y)]
@@ -746,7 +754,7 @@ def input_canvas(sheet, box, row=None):
         kwargs['value'] = row.text
         kwargs['i'] = box.x1-row.x
     else:
-        x, y = box.x1, box.y1
+        x, y = box.x1-sheet.xoffset, box.y1-sheet.yoffset
 
     return vd.editText(y, x, sheet.windowWidth-x, fillchar='', clear=False, **kwargs)
 
@@ -877,6 +885,8 @@ Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor()
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
+Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
+Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
 
 for i in range(1,10):
     Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([vd.memory.cliprows[%d]])'%(i-1))
@@ -894,6 +904,11 @@ Drawing.init('paste_mode', lambda: 'all')
 Drawing.init('cursorFrameIndex', lambda: 0)
 Drawing.init('autoplay_frames', list)
 Drawing.init('last_autosave', int)
+
+# (xoffset, yoffset) is absolute coordinate of upper left of viewport (0, 0)
+Drawing.init('yoffset', int)
+Drawing.init('xoffset', int)
+
 vd.default_color = ''
 Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows} {sheet.rowtype}  {sheet.options.disp_selected_note}{sheet.source.nSelectedRows}'
 Drawing.class_options.quitguard='modified'
