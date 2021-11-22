@@ -3,7 +3,6 @@ from collections import defaultdict
 import random
 import time
 import unicodedata
-from collections import defaultdict
 from visidata import *
 from visidata import CharBox, boundingBox
 
