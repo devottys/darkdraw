@@ -32,7 +32,15 @@ def words(vd):
 
 @VisiData.api
 def random_word(vd):
-    return random.choice(vd.words)
+    try:
+        return random.choice(vd.words)
+    except FileNotFoundError:
+        pass
+    except Exception as e:
+        vd.exceptionCaught(e)
+
+    return 'unnamed'
+
 
 def any_match(G1, G2):
     if G1 and G2:
