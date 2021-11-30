@@ -792,6 +792,8 @@ DrawingSheet.addCommand('gz(', 'degroup-selected-temp', 'degroup = sheet.degroup
 DrawingSheet.addCommand('gz)', 'regroup-selected', 'sheet.regroup(someSelectedRows)')
 
 Drawing.addCommand('zs', 'select-top', 'select_top(cursorBox)')
+Drawing.addCommand('gzs', 'select-all-this-frame', 'sheet.select(list(source.gatherBy(lambda r,f=currentFrame: r.frame == f.id)))')
+Drawing.addCommand('gzu', 'unselect-all-this-frame', 'sheet.unselect(list(source.gatherBy(lambda r,f=currentFrame: r.frame == f.id)))')
 Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(lambda r,ch=cursorChar: r.text==ch)))')
 Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
 Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
