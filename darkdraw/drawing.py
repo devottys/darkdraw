@@ -155,10 +155,19 @@ class DrawingSheet(JsonSheet):
         newf.id = name
         newf.duration_ms = 100
         if f1:
+            # insert frame just after the first frame in the actual rowset
             for i, r in enumerate(self.rows):
                 if r is f1:
                     vd.clearCaches()
-                    return self.addRow(newf, index=i+1)
+                    self.addRow(newf, index=i+1)
+                    break
+
+            # copy all rows on frame1
+            thisframerows = list(copy(r) for r in self.rows if r.frame == f1.id)
+            for r in thisframerows:
+                r.frame = newf.id
+                self.addRow(r)
+            return newf
         else:
             vd.clearCaches()
             return self.addRow(newf, index=0)
@@ -302,9 +311,9 @@ class Drawing(TextCanvas):
 
     def inFrame(self, r, frames):
         'Return True if *r* is an element that would be displayed (even if hidden or buried) in the given set of *frames*.'
-        if r.type: return False
+        if r.type: return False  # frame or other non-element type
         if not r.frame: return True
-        if not self.frames: return False
+        if not frames: return False
         return any(r.frame == f.id for f in frames)
 
     def moveToRow(self, rowstr):
