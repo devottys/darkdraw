@@ -1,6 +1,7 @@
 from .box import *
 from .charbrowser import *
 from .drawing import *
+from .stamps import *
 
 from .ansihtml import * # save to .ansihtml
 
