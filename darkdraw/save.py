@@ -1,5 +1,6 @@
-from visidata import VisiData
+from visidata import VisiData, colors
 from .drawing import Drawing, DrawingSheet
+from .ansihtml import termcolor_to_css_color
 from unittest import mock
 
 from PIL import Image, ImageDraw, ImageFont
@@ -35,7 +36,10 @@ def save_png(vd, p, *sheets):
                 if x-r.x >= len(r.text): continue
                 i = x-r.x
                 s = r.text[i:]
-                draw.text(((r.x+i)*8, r.y*16), s, font=font)
+                fg, bg, attrs = colors.split_colorstr(r.color)
+                if r.color: vd.status(r.color)
+                if fg: vd.status(fg)
+                draw.text(((r.x+i)*8, r.y*16), s, font=font, fill=termcolor_to_css_color(fg) or None, anchor='mm')
                 displayed.add(k)
 
     im.save(str(p))

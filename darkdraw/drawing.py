@@ -866,8 +866,8 @@ def select_top(sheet, box):
     sheet.select(r)
 
 
-Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)')
-Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)')
+Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
+Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
 Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
 Drawing.addCommand('<', 'cycle-cursor-prev', 'cycle_color(cursorRows, -1)')
 Drawing.addCommand('>', 'cycle-cursor-next', 'cycle_color(cursorRows, 1)')
@@ -930,8 +930,67 @@ DrawingSheet.class_options.null_value=''
 Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
 BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
 
+@Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
+def box_cursor(sheet):
+    pass
+
 vd.addMenuItem('File', 'New drawing', 'new-drawing')
 vd.addMenuItem('View', 'Unicode browser', 'open-unicode')
 vd.addMenuItem('View', 'Drawing table', 'open-drawing')
 vd.addMenuItem('Help', 'DarkDraw tutorial', 'open-tutorial-darkdraw')
 vd.addMenuItem('Edit', 'Add text', 'add-input')
+
+vd.addMenu(Menu('DarkDraw',
+    Menu('New drawing', 'new-drawing'),
+    Menu('View',
+        Menu('Colors sheet', 'open-colors'),
+        Menu('Unicode characters', 'open-unicode'),
+        Menu('Backing table', 'open-backing'),
+        Menu('Frames sheet', 'open-frames'),
+    ),
+    Menu('Cycle paste mode', 'cycle-paste-mode'),
+    Menu('Flip cursor',
+        Menu('horizontally', 'flip-cursor-horiz'),
+        Menu('vertically', 'flip-cursor-vert'),
+    ),
+    Menu('Animation',
+        Menu('New frame',
+            Menu('before', 'new-frame-before'),
+            Menu('after', 'new-frame-after'),
+        ),
+        Menu('Go to frame',
+            Menu('first', 'first-frame'),
+            Menu('last', 'last-frame'),
+            Menu('prev', 'prev-frame'),
+            Menu('next', 'next-frame'),
+        ),
+        Menu('Start', 'reset-time'),
+    ),
+    Menu('Color',
+        Menu('Set default from cursor', 'set-default-cursor'),
+        Menu('Set to input', 'set-color-input'),
+        Menu('Cycle',
+            Menu('cursor',
+                Menu('down', 'cycle-cursor-prev'),
+                Menu('up', 'cycle-cursor-next'),
+            ),
+            Menu('selected',
+                Menu('down', 'color-selected-next'),
+                Menu('up', 'color-selected-prev'),
+            ),
+            Menu('top of cursor',
+                Menu('down', 'cycle-topcursor-next'),
+                Menu('up', 'cycle-topcursor-prev'),
+            ),
+        ),
+        Menu('Tag',
+            Menu('selected', 'tag-selected'),
+            Menu('under cursor', 'tag-cursor'),
+            Menu('top of cursor', 'tag-topcursor'),
+        ),
+        Menu('Insert',
+            Menu('Line', 'insert-row'),
+            Menu('Character', 'insert-col'),
+        ),
+    ),
+))
