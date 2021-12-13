@@ -1,6 +1,6 @@
 from visidata import VisiData, colors
 from .drawing import Drawing, DrawingSheet
-from .ansihtml import termcolor_to_css_color
+from .ansihtml import termcolor_to_rgb
 from unittest import mock
 
 from PIL import Image, ImageDraw, ImageFont
@@ -37,9 +37,14 @@ def save_png(vd, p, *sheets):
                 i = x-r.x
                 s = r.text[i:]
                 fg, bg, attrs = colors.split_colorstr(r.color)
-                if r.color: vd.status(r.color)
-                if fg: vd.status(fg)
-                draw.text(((r.x+i)*8, r.y*16), s, font=font, fill=termcolor_to_css_color(fg) or None, anchor='mm')
+                c = termcolor_to_rgb(fg)
+                xy = ((r.x+i)*8, r.y*16)
+                if bg:
+                    draw.rectangle((xy, (xy[0]+16, xy[1]+8)), fill=termcolor_to_rgb(bg))
+                draw.text(xy, s, font=font, fill=c)
+                if 'underline' in attrs:
+                    draw.line((xy, (xy[0]+16, xy[1])), fill=c)
+                    draw.line(((xy[0], xy[1]+8), (xy[0]+16, xy[1]+8)), fill=c)
                 displayed.add(k)
 
     im.save(str(p))

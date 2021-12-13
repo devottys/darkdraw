@@ -5,9 +5,21 @@ from visidata import AttrDict, VisiData, colors
 from .drawing import Drawing, DrawingSheet
 
 
-def termcolor_to_css_color(n):
-    if not n.isdigit():
-        return n
+def termcolor_to_rgb(n):
+    if not n:
+        return (255,255,255)
+    colordict = dict(
+            black=(0,0,0),
+            blue=(0,0,255),
+            green=(0,255,0),
+            red=(255,0,0),
+            cyan=(0,255,255),
+            magenta=(255,0,255),
+            brown=(0,0,255),
+            white=(255,255,255),
+    )
+    if n in colordict:
+        return colordict.get(n)
     n = int(n)
     if 0 <= n < 16:
         raise
@@ -15,12 +27,17 @@ def termcolor_to_css_color(n):
         n -= 16
         r,g,b = n//36,(n%36)//6,n%6
         ints = [0x00, 0x66, 0x88,0xbb,0xdd,0xff]
-        r,g,b=ints[r],ints[g],ints[b]
+        return ints[r],ints[g],ints[b]
     else:
         n=list(range(8,255,10))[n-232]
-        r,g,b=n,n,n
-    return '#%02x%02x%02x' % (r,g,b)
+        return n,n,n
 
+
+def termcolor_to_css_color(n):
+    if not n.isdigit():
+        return n
+    r,g,b = termcolor_to_rgb(n)
+    return '#%02x%02x%02x' % (r,g,b)
 
 def htmlattrstr(r, attrnames, **kwargs):
     d = AttrDict(kwargs)
