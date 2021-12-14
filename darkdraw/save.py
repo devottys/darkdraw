@@ -1,16 +1,20 @@
-from visidata import VisiData, colors
+from visidata import VisiData, colors, vd
 from .drawing import Drawing, DrawingSheet
 from .ansihtml import termcolor_to_rgb
 from unittest import mock
 
 from PIL import Image, ImageDraw, ImageFont
 
+vd.option('darkdraw_font', '/usr/share/fonts/truetype/unifont/unifont.ttf', 'path of TTF font file for save_png')
+vd.option('darkdraw_font_size', 16, 'font size for save_png')
+
+
 @VisiData.api
 def save_png(vd, p, *sheets):
     im = Image.new("RGB", (640, 480), color=0)
 
     draw = ImageDraw.Draw(im)
-    font = ImageFont.truetype("/usr/share/fonts/truetype/unifont/unifont.ttf", 16)
+    font = ImageFont.truetype(vd.options.darkdraw_font, vd.options.darkdraw_font_size)
 
     for vs in sheets:
         if isinstance(vs, DrawingSheet):
