@@ -1,2 +1,3 @@
 visidata>=2.3
 wcwidth
+Pillow
