@@ -380,7 +380,6 @@ class Drawing(TextCanvas):
 
         selectedGroups = set()  # any group with a selected element
 
-        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
         self.yoffset = max(self.yoffset, 0)
         self.xoffset = max(self.xoffset, 0)
         self.yoffset = min(self.yoffset, self.maxY+1)
@@ -491,6 +490,7 @@ class Drawing(TextCanvas):
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
+        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
         if self._scr:
             self.draw(self._scr)
 
