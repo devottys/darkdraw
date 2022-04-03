@@ -494,14 +494,17 @@ class Drawing(TextCanvas):
         if self._scr:
             self.draw(self._scr)
 
-    def place_text(self, text, box, dx=0, dy=0, go_forward=True):
-        'Return (width, height) of drawn text.'
-        x, y = box.x1, box.y1
+    def add_text(self, text, x, y, color=''):
         r = self.newRow()
-        r.x, r.y, r.text = x, y, text
+        r.x, r.y, r.text, r.color = x, y, text, color
         r.frame = self.currentFrame.id
         self.source.addRow(r)
         self.modified = True
+
+    def place_text(self, text, box, dx=0, dy=0, go_forward=True):
+        'Return (width, height) of drawn text.'
+        self.add_text(text, box.x1, box.y1)
+
         if go_forward:
             self.go_forward(dispwidth(text)+dx, 1+dy)
         if self.cursorBox.x1 > self.windowWidth:
