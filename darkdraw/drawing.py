@@ -1,5 +1,6 @@
 from unittest import mock
 from collections import defaultdict
+import itertools
 import random
 import time
 import unicodedata
@@ -660,7 +661,7 @@ class Drawing(TextCanvas):
         modes = ['all', 'char', 'color']
         self.paste_mode = modes[(modes.index(self.paste_mode)+1)%len(modes)]
 
-    def paste_chars(self, srcrows, n=None):
+    def paste_chars(self, srcrows, box, n=None):
         srcrows or vd.fail('no rows to paste')
 
         newrows = []
@@ -668,13 +669,13 @@ class Drawing(TextCanvas):
         x1, y1, x2, y2 = boundingBox(srcrows)
         for oldr in srcrows:
             if oldr.x is None:
-                newx = self.cursorBox.x1
-                newy = self.cursorBox.y1
+                newx = box.x1
+                newy = box.y1
                 if len(srcrows) > 1:
                     self.go_forward(dispwidth(oldr.text)+1, 1)
             else:
-                newx = (oldr.x or 0)+self.cursorBox.x1-x1
-                newy = (oldr.y or 0)+self.cursorBox.y1-y1
+                newx = (oldr.x or 0)+box.x1-x1
+                newy = (oldr.y or 0)+box.y1-y1
 
             if self.paste_mode in 'all char':
                 r = self.newRow()
@@ -688,7 +689,7 @@ class Drawing(TextCanvas):
                 self.source.addRow(r)
                 npasted += 1
             elif self.paste_mode == 'color':
-                if oldr.color and newx < self.cursorBox.x2 and newy < self.cursorBox.y2-1:
+                if oldr.color and newx < box.x2 and newy < box.y2-1:
                     for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                         npasted += 1
                         existing.color = oldr.color
@@ -698,7 +699,7 @@ class Drawing(TextCanvas):
 
     def paste_special(self):
         if self.paste_mode == 'color':  # top only
-            return self.paste_chars(vd.memory.cliprows, n=1)
+            return self.paste_chars(vd.memory.cliprows, self.cursorBox, n=1)
 
         for r in vd.memory.cliprows:
             if r.type == 'group':
@@ -722,6 +723,8 @@ class Drawing(TextCanvas):
             r.x = rows[0].x
 
 
+Drawing.init('mode', str)
+Drawing.init('linepoints', list)
 Drawing.init('cursorBox', lambda: CharBox(None, 0,0,1,1))
 Drawing.init('_displayedRows', dict)  # (x,y) -> list of rows
 Drawing.init('pendir', lambda: 'r')
@@ -778,7 +781,7 @@ Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
 Drawing.addCommand('gy', 'yank-selected', 'sheet.copyRows(sheet.selectedRows)')
 Drawing.addCommand('x', 'cut-char', 'sheet.copyRows(remove_at(cursorBox))')
 Drawing.addCommand('zx', 'cut-char-top', 'r=list(itercursor())[-1]; sheet.copyRows([r]); source.deleteBy(lambda r,row=r: r is row)')
-Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.memory.cliprows)')
+Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.memory.cliprows, cursorBox)')
 Drawing.addCommand('zp', 'paste-special', 'sheet.paste_special()')
 
 Drawing.addCommand('zh', 'go-left-obj', 'go_obj(-1, 0)')
@@ -869,6 +872,7 @@ def select_top(sheet, box):
     sheet.select(r)
 
 
+
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
 Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
@@ -932,6 +936,151 @@ DrawingSheet.class_options.null_value=''
 
 Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
 BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
+
+@Drawing.api
+def set_linedraw_mode(sheet):
+    if sheet.mode != 'linedraw':
+        sheet.mode = 'linedraw'
+        sheet.linepoints = []
+    else:
+        sheet.mode = ''
+        sheet.linepoints = []
+
+@Drawing.api
+def next_point(sheet, x, y):
+    if sheet.linepoints:
+        objs = vd.memory.cliprows
+        if not objs:
+            r = sheet.newRow()
+            r.text = '.'
+            objs = [r]
+        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x, y):
+            sheet.draw_line(objs, *sheet.linepoints[0], x, y)
+        else:
+            a, b = sheet.linepoints
+            sheet.qcurve((a, (x, y), b), objs)
+
+        sheet.linepoints = [sheet.linepoints[-1]]
+
+
+
+@Drawing.api
+def click(sheet, x, y):
+    if sheet.mode == 'linedraw':
+        sheet.linepoints.append((x,y))
+
+    sheet.cursorBox = CharBox(None, x, y, 1, 1)
+
+@Drawing.api
+def release(sheet, x, y):
+    if sheet.mode == 'linedraw':
+        sheet.next_point(x, y)
+    else:
+        sheet.cursorBox.x2=x+2
+        sheet.cursorBox.y2=y+2
+        sheet.cursorBox.normalize()
+
+Drawing.addCommand('.', 'next-point', 'next_point(cursorBox.x1, cursorBox.y1)', '')
+Drawing.addCommand('w', 'line-drawing-mode', 'set_linedraw_mode()', '')
+Drawing.addCommand('BUTTON1_PRESSED', 'click-cursor', 'click(mouseX, mouseY)', 'start cursor box with left mouse button press')
+Drawing.addCommand('BUTTON1_RELEASED', 'end-cursor', 'release(mouseX, mouseY)', 'end cursor box with left mouse button release')
+
+@Drawing.api
+def draw_line(self, objlist, x0, y0, x1, y1):
+    dx = abs(x1-x0)
+    sx = 1 if x0 < x1 else -1
+    dy = -abs(y1-y0)
+    sy = 1 if y0 < y1 else -1
+    error = dx + dy
+
+    objit = itertools.cycle(objlist)
+
+    while True:
+        row = next(objit)
+        self.paste_chars([row], CharBox(None, x0, y0, 1, 1))
+
+        if x0 == x1 and y0 == y1:
+            break
+        e2 = 2 * error
+        if e2 >= dy:
+            if x0 == x1: break
+            error += dy
+            x0 += sx
+        if e2 <= dx:
+            if y0 == y1: break
+            error += dx
+            y0 += sy
+
+
+@Drawing.api
+def qcurve(self, vertexes, objrows):
+        'Draw quadratic curve from vertexes[0] to vertexes[2] with control point at vertexes[1]'
+        if len(vertexes) != 3:
+            vd.fail('need exactly 3 points for qcurve (got %d)' % len(vertexes))
+
+        x1, y1 = vertexes[0]
+        x2, y2 = vertexes[1]
+        x3, y3 = vertexes[2]
+        objit = itertools.cycle(objrows)
+        row = next(objit)
+        self.paste_chars([row], CharBox(None, x1, y1, 1, 1))
+        self._recursive_bezier(x1, y1, x2, y2, x3, y3, row)
+        self.paste_chars([row], CharBox(None, x3, y3, 1, 1))
+
+@Drawing.api
+def _recursive_bezier(self, x1, y1, x2, y2, x3, y3, row, level=0):
+        'from http://www.antigrain.com/research/adaptive_bezier/'
+        m_approximation_scale = 10.0
+        m_distance_tolerance = (0.5 / m_approximation_scale) ** 2
+        m_angle_tolerance = 1 * 2*math.pi/360  # 15 degrees in rads
+        curve_angle_tolerance_epsilon = 0.01
+        curve_recursion_limit = 32
+        curve_collinearity_epsilon = 1e-30
+
+        if level > curve_recursion_limit:
+            return
+
+        # Calculate all the mid-points of the line segments
+
+        x12   = (x1 + x2) / 2
+        y12   = (y1 + y2) / 2
+        x23   = (x2 + x3) / 2
+        y23   = (y2 + y3) / 2
+        x123  = (x12 + x23) / 2
+        y123  = (y12 + y23) / 2
+
+        dx = x3-x1
+        dy = y3-y1
+        d = abs(((x2 - x3) * dy - (y2 - y3) * dx))
+
+        if d > curve_collinearity_epsilon:
+            # Regular care
+            if d*d <= m_distance_tolerance * (dx*dx + dy*dy):
+                # If the curvature doesn't exceed the distance_tolerance value, we tend to finish subdivisions.
+                if m_angle_tolerance < curve_angle_tolerance_epsilon:
+                    self.paste_chars([row], CharBox(None, int(x123), int(y123), 1, 1))
+                    return
+
+                # Angle & Cusp Condition
+                da = abs(math.atan2(y3 - y2, x3 - x2) - math.atan2(y2 - y1, x2 - x1))
+                if da >= math.pi:
+                    da = 2*math.pi - da
+
+                if da < m_angle_tolerance:
+                    # Finally we can stop the recursion
+                    self.paste_chars([row], CharBox(None, int(x123), int(y123), 1, 1))
+                    return
+        else:
+            # Collinear case
+            dx = x123 - (x1 + x3) / 2
+            dy = y123 - (y1 + y3) / 2
+            if dx*dx + dy*dy <= m_distance_tolerance:
+                self.paste_chars([row], CharBox(None, int(x123), int(y123), 1, 1))
+                return
+
+        # Continue subdivision
+        self._recursive_bezier(x1, y1, x12, y12, x123, y123, row, level + 1)
+        self._recursive_bezier(x123, y123, x23, y23, x3, y3, row, level + 1)
 
 @Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
 def box_cursor(sheet):
