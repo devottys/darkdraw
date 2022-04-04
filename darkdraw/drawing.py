@@ -946,8 +946,9 @@ def set_linedraw_mode(sheet):
         sheet.mode = ''
         sheet.linepoints = []
 
+
 @Drawing.api
-def next_point(sheet, x, y):
+def next_point(sheet, x2, y2):
     if sheet.linepoints:
         objs = vd.memory.cliprows
         if not objs:
@@ -957,11 +958,12 @@ def next_point(sheet, x, y):
         if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x, y):
             sheet.draw_line(objs, *sheet.linepoints[0], x, y)
         else:
-            a, b = sheet.linepoints
-            sheet.qcurve((a, (x, y), b), objs)
+            xy1, xy3 = sheet.linepoints
+            objit = itertools.cycle(objs)
+            for x, y in bezier(*xy1, x2, y2, *xy3):
+                self.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
 
         sheet.linepoints = [sheet.linepoints[-1]]
-
 
 
 @Drawing.api
@@ -1014,73 +1016,11 @@ def draw_line(self, objlist, x0, y0, x1, y1):
 
 @Drawing.api
 def qcurve(self, vertexes, objrows):
-        'Draw quadratic curve from vertexes[0] to vertexes[2] with control point at vertexes[1]'
-        if len(vertexes) != 3:
-            vd.fail('need exactly 3 points for qcurve (got %d)' % len(vertexes))
-
         x1, y1 = vertexes[0]
         x2, y2 = vertexes[1]
         x3, y3 = vertexes[2]
-        objit = itertools.cycle(objrows)
-        row = next(objit)
-        self.paste_chars([row], CharBox(None, x1, y1, 1, 1))
-        self._recursive_bezier(x1, y1, x2, y2, x3, y3, row)
-        self.paste_chars([row], CharBox(None, x3, y3, 1, 1))
 
-@Drawing.api
-def _recursive_bezier(self, x1, y1, x2, y2, x3, y3, row, level=0):
-        'from http://www.antigrain.com/research/adaptive_bezier/'
-        m_approximation_scale = 10.0
-        m_distance_tolerance = (0.5 / m_approximation_scale) ** 2
-        m_angle_tolerance = 1 * 2*math.pi/360  # 15 degrees in rads
-        curve_angle_tolerance_epsilon = 0.01
-        curve_recursion_limit = 32
-        curve_collinearity_epsilon = 1e-30
 
-        if level > curve_recursion_limit:
-            return
-
-        # Calculate all the mid-points of the line segments
-
-        x12   = (x1 + x2) / 2
-        y12   = (y1 + y2) / 2
-        x23   = (x2 + x3) / 2
-        y23   = (y2 + y3) / 2
-        x123  = (x12 + x23) / 2
-        y123  = (y12 + y23) / 2
-
-        dx = x3-x1
-        dy = y3-y1
-        d = abs(((x2 - x3) * dy - (y2 - y3) * dx))
-
-        if d > curve_collinearity_epsilon:
-            # Regular care
-            if d*d <= m_distance_tolerance * (dx*dx + dy*dy):
-                # If the curvature doesn't exceed the distance_tolerance value, we tend to finish subdivisions.
-                if m_angle_tolerance < curve_angle_tolerance_epsilon:
-                    self.paste_chars([row], CharBox(None, int(x123), int(y123), 1, 1))
-                    return
-
-                # Angle & Cusp Condition
-                da = abs(math.atan2(y3 - y2, x3 - x2) - math.atan2(y2 - y1, x2 - x1))
-                if da >= math.pi:
-                    da = 2*math.pi - da
-
-                if da < m_angle_tolerance:
-                    # Finally we can stop the recursion
-                    self.paste_chars([row], CharBox(None, int(x123), int(y123), 1, 1))
-                    return
-        else:
-            # Collinear case
-            dx = x123 - (x1 + x3) / 2
-            dy = y123 - (y1 + y3) / 2
-            if dx*dx + dy*dy <= m_distance_tolerance:
-                self.paste_chars([row], CharBox(None, int(x123), int(y123), 1, 1))
-                return
-
-        # Continue subdivision
-        self._recursive_bezier(x1, y1, x12, y12, x123, y123, row, level + 1)
-        self._recursive_bezier(x123, y123, x23, y23, x3, y3, row, level + 1)
 
 @Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
 def box_cursor(sheet):
