@@ -908,7 +908,7 @@ Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1
 Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
 
 for i in range(1,10):
-    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([vd.memory.cliprows[%d]])'%(i-1))
+    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([vd.memory.cliprows[%d]], cursorBox)'%(i-1))
 
 Drawing.bindkey('zKEY_RIGHT', 'resize-cursor-wider')
 Drawing.bindkey('zKEY_LEFT', 'resize-cursor-thinner')
