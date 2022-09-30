@@ -1,3 +1,4 @@
-visidata>=2.9
+visidata>=2.10.1
 wcwidth
 Pillow
+requests
