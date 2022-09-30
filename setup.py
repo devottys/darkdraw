@@ -18,5 +18,6 @@ setup(name='darkdraw',
       install_requires=requirements(),
       packages=['darkdraw'],
       include_package_data=True,
+      entry_points={'visidata.plugins': 'darkdraw=darkdraw'},
       package_data={'darkdraw': ['darkdraw/ansi.html']},
 )
