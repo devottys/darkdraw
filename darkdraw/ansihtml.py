@@ -1,8 +1,37 @@
 from unittest import mock
 from pkg_resources import resource_filename
-from visidata import AttrDict, VisiData, colors
+from visidata import AttrDict, VisiData, colors, vd
+import curses
 
 from .drawing import Drawing, DrawingSheet
+
+vd.option('darkdraw_html_tmpl', resource_filename(__name__, 'ansi.html'), '')
+
+
+def split_colorstr(colorstr):
+        'Return (fgstr, bgstr, attrlist) parsed from colorstr.'
+        fgbgattrs = ['', '', []]  # fgstr, bgstr, attrlist
+        if not colorstr:
+            return fgbgattrs
+        colorstr = str(colorstr)
+
+        i = 0  # fg by default
+        for x in colorstr.split():
+            if x == 'fg':
+                i = 0
+                continue
+            elif x in ['on', 'bg']:
+                i = 1
+                continue
+
+            if hasattr(curses, 'A_' + x.upper()):
+                fgbgattrs[2].append(x)
+            else:
+                if not fgbgattrs[i]:  # keep first known color
+                    fgbgattrs[i] = x
+
+        return fgbgattrs
+
 
 
 def termcolor_to_rgb(n):
@@ -65,11 +94,11 @@ def save_ansihtml(vd, p, *sheets):
             for x in range(dwg.minX, dwg.maxX+1):
                 rows = dwg._displayedRows.get((x,y), None)
                 if not rows:
-                    body += ' '
+                    body += '<span> </span>'
                 else:
                     r = rows[-1]
                     ch = r.text[x-r.x]
-                    fg, bg, attrs = colors.split_colorstr(r.color)
+                    fg, bg, attrs = split_colorstr(r.color)
 
                     style = ''
                     if 'underline' in attrs:
@@ -97,7 +126,7 @@ def save_ansihtml(vd, p, *sheets):
         body += '</pre>\n'
 
     try:
-        tmpl = open(resource_filename(__name__, 'ansi.html')).read()
+        tmpl = open(vs.options.darkdraw_html_tmpl).read()
         out = tmpl.replace('<body>', '<body>'+body)
     except FileNotFoundError:
         out = body
