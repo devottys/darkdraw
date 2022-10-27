@@ -729,6 +729,10 @@ Drawing.init('cursorBox', lambda: CharBox(None, 0,0,1,1))
 Drawing.init('_displayedRows', dict)  # (x,y) -> list of rows
 Drawing.init('pendir', lambda: 'r')
 Drawing.init('disabled_tags', set)  # set of groupnames which should not be drawn or interacted with
+DrawingSheet.init('minX', int)
+DrawingSheet.init('minY', int)
+DrawingSheet.init('maxX', int)
+DrawingSheet.init('maxY', int)
 
 Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char')
 Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char')
