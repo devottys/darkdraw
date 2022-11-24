@@ -6,7 +6,7 @@ from pathlib import Path
 def requirements():
     return Path('requirements.txt').read_text().splitlines()
 
-__version__='0.3'
+__version__='0.3.1'
 
 setup(name='darkdraw',
       version=__version__,

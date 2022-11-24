@@ -39,19 +39,27 @@ def termcolor_to_rgb(n):
         return (255,255,255)
     colordict = dict(
             black=(0,0,0),
-            blue=(0,0,255),
-            green=(0,255,0),
-            red=(255,0,0),
-            cyan=(0,255,255),
+            blue=(114,159,207),
+            green=(78,154,6),
+            red=(204,0,0),
+            cyan=(6,152,154),
             magenta=(255,0,255),
-            brown=(0,0,255),
-            white=(255,255,255),
+            brown=(196.160, 0),
+            white=(211,215,207),
+            gray=(85,87,83),
+            lightblue=(50,175,255),
+            lightgreen=(138,226,52),
+            lightaqua=(52,226,226),
+            lightred=(239,41,41),
+            lightpurple=(173,127,168),
+            lightyellow=(252,233,79),
+            brightwhite=(255,255,255),
     )
     if n in colordict:
         return colordict.get(n)
     n = int(n)
     if 0 <= n < 16:
-        raise
+        return list(colordict.values())[n]
     if 16 <= n < 232:
         n -= 16
         r,g,b = n//36,(n%36)//6,n%6
