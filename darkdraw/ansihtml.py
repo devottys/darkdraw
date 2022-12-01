@@ -44,7 +44,7 @@ def termcolor_to_rgb(n):
             red=(204,0,0),
             cyan=(6,152,154),
             magenta=(255,0,255),
-            brown=(196.160, 0),
+            brown=(196,160, 0),
             white=(211,215,207),
             gray=(85,87,83),
             lightblue=(50,175,255),
