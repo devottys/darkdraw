@@ -13,6 +13,7 @@ vd.option('pen_down', False, 'is pen down')
 vd.option('disp_guide_xy', '', 'x y position of onscreen guides')
 vd.option('autosave_interval_s', 0, 'seconds between autosave')
 vd.option('autosave_path', 'autosave', 'path to put autosave files')
+vd.option('ddw_add_baseframe', False, 'add text to baseframe instead of current frame')
 
 vd.charPalWidth = charPalWidth = 16
 vd.charPalHeight = charPalHeight = 16
@@ -498,7 +499,9 @@ class Drawing(TextCanvas):
     def add_text(self, text, x, y, color=''):
         r = self.newRow()
         r.x, r.y, r.text, r.color = x, y, text, color
-        r.frame = self.currentFrame.id
+        if not self.options.ddw_add_baseframe:
+            r.frame = self.currentFrame.id
+
         self.source.addRow(r)
         self.modified = True
 
