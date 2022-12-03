@@ -683,7 +683,8 @@ class Drawing(TextCanvas):
             if self.paste_mode in 'all char':
                 r = self.newRow()
                 r.update(deepcopy(oldr))
-                r.frame = self.currentFrame.id
+                if not self.options.ddw_add_baseframe:
+                    r.frame = self.currentFrame.id
                 r.text = oldr.text
                 r.x, r.y = newx, newy
                 if self.paste_mode == 'char':
