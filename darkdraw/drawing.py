@@ -109,6 +109,14 @@ class DrawingSheet(JsonSheet):
             except Exception as e:
                 vd.exceptionCaught(e)
 
+    def untag_rows(self, rows, s):
+        col = self.column('tags')
+        for row in Progress(rows):
+            v = col.getValue(row)
+            assert isinstance(v, (list, tuple)), type(r).__name__
+            v = [x for x in v if x != s]
+            col.setValue(row, v)
+
     def tag_rows(self, rows, tagstr):
         tags = tagstr.split()
         for r in rows:
@@ -894,6 +902,10 @@ Drawing.addCommand('z>', 'cycle-topcursor-next', 'cycle_color(topCursorRows, 1)'
 Drawing.addCommand('g+', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows, vd.input("tag selected as: ", type="tag"))')
 Drawing.addCommand('+', 'tag-cursor', 'sheet.tag_rows(sheet.cursorRows, vd.input("tag cursor as: ", type="tag"))')
 Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, vd.input("tag top of cursor as: ", type="tag"))')
+
+Drawing.addCommand('-', 'untag-cursor', 'untag_rows(sheet.cursorRows, vd.input("untag cursor as: ", type="tag"))')
+Drawing.addCommand('g-', 'untag-selected', 'untag_rows(sheet.someSelectedRows, vd.input("untag selected as: ", type="tag"))')
+Drawing.addCommand('z-', 'untag-topcursor', 'sheet.untag_rows(sheet.topCursorRows, vd.input("untag top of cursor as: ", type="tag"))')
 
 Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
 Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row)) or fail("no next selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to next selected row'),
