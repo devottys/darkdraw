@@ -96,6 +96,7 @@ def save_ansihtml(vd, p, *sheets):
 
         dwg._scr = mock.MagicMock(__bool__=mock.Mock(return_value=True),
                                   getmaxyx=mock.Mock(return_value=(9999, 9999)))
+        dwg.reload()
         dwg.draw(dwg._scr)
         body = '''<pre>'''
         for y in range(dwg.minY, dwg.maxY+1):
