@@ -125,8 +125,13 @@ def save_ansihtml(vd, p, *sheets):
                     spanattrstr = htmlattrstr(r, 'id class'.split(), style=style)
                     span = f'<span {spanattrstr}>{ch}</span>'
                     if r.href:
-                        linkattrstr = htmlattrstr(r, 'href title'.split())
-                        body += f'<a {linkattrstr}>{span}</a>'
+                        if (x-r.x == 0):
+                            linkattrstr = htmlattrstr(r, 'href title'.split())
+                            body += f'<a {linkattrstr}>{span}'
+                        elif (x-r.x == len(r.text)-1):
+                            body += f'{span}</a>'
+                        else:
+                            body += span
                     else:
                         body += span
 
