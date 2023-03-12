@@ -307,6 +307,8 @@ class Drawing(TextCanvas):
         return ret
 
     def __getattr__(self, k):
+        if k == 'source' or self.source is self:
+            return super().__getattr__(k)
         return getattr(self.source, k)
 
     @property
