@@ -914,7 +914,7 @@ Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,sou
 Drawing.addCommand('z^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor_top", source=cursorRow))')
 Drawing.addCommand('^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor", source=cursorRows))')
 
-Drawing.addCommand('^S', 'save-sheet', 'vd.saveSheets(inputPath("save to: ", value=source.getDefaultSaveName()), sheet.source, confirm_overwrite=options.confirm_overwrite)', 'save current drawing')
+Drawing.addCommand('^S', 'save-sheet', 'vd.saveSheets(inputPath("save to: ", value=source.getDefaultSaveName()), sheet.source)', 'save current drawing')
 Drawing.addCommand('i', 'insert-row', 'for r in source.someSelectedRows: r.y += (r.y >= cursorBox.y1)', '')
 Drawing.addCommand('zi', 'insert-col', 'for r in source.someSelectedRows: r.x += (r.x >= cursorBox.x1)', '')
 
