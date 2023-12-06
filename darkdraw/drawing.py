@@ -1,6 +1,7 @@
 from unittest import mock
 from collections import defaultdict
 import itertools
+import functools
 import random
 import time
 import unicodedata
