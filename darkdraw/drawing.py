@@ -2,7 +2,7 @@ from unittest import mock
 from collections import defaultdict
 import itertools
 import functools
-import random
+from random import choice
 import time
 import unicodedata
 from visidata import *
@@ -35,7 +35,7 @@ def words(vd):
 @VisiData.api
 def random_word(vd):
     try:
-        return random.choice(vd.words)
+        return choice(vd.words)
     except FileNotFoundError:
         pass
     except Exception as e:
