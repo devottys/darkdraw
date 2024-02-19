@@ -93,7 +93,7 @@ To start, you can play with some of the samples:
 or with the tutorial:
 
 ```
-vd https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw
+vd https://bluebird.sh/ddw/darkdraw-tutorial.ddw
 ```
 
 If pulling from the url does not work, try downloading the file, and then:
