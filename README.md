@@ -46,29 +46,10 @@ DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There a
     vd
 ```
 
-3. Scroll down to "VisiData community plugins" and press `Enter`. Alternative press `Space`, and type `open-plugins`.
-
-4. Within the **Plugins Sheet** scroll down to darkdraw, and press `a` to install it. It will be available on the next launch.
-
-### Or install DarkDraw first
-
-0. Ensure Python3 and pip3 are installed on your system.
-
-```
-    python3 --version
-    pip3 --version
-```
-
-1. Install the latest darkdraw release from GitHub:
+3. Install the latest darkdraw release from GitHub:
 
 ```
     pip3 install git+https://github.com/devottys/darkdraw.git@master
-```
-
-2. Create a `.visidatarc` in your `$HOME` directory, and in it add:
-
-```
-    from darkdraw import *
 ```
 
 ### Use existing Dockerfile (default opens with a tutorial)
