@@ -515,6 +515,7 @@ class Drawing(TextCanvas):
 
         self.source.addRow(r)
         self.modified = True
+        return r
 
     def place_text(self, text, box, dx=0, dy=0, go_forward=True):
         'Return (width, height) of drawn text.'
