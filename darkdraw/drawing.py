@@ -5,8 +5,10 @@ import functools
 from random import choice
 import time
 import unicodedata
+from copy import copy, deepcopy
 from visidata import *
-from visidata import CharBox, boundingBox
+from visidata import dispwidth, CharBox, boundingBox
+from visidata.bezier import bezier
 
 
 vd.allPrefixes += list('01')
@@ -979,13 +981,13 @@ def next_point(sheet, x2, y2):
             r = sheet.newRow()
             r.text = '.'
             objs = [r]
-        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x, y):
-            sheet.draw_line(objs, *sheet.linepoints[0], x, y)
+        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x2, y2):
+            sheet.draw_line(objs, *sheet.linepoints[0], x2, y2)
         else:
             xy1, xy3 = sheet.linepoints
             objit = itertools.cycle(objs)
             for x, y in bezier(*xy1, x2, y2, *xy3):
-                self.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
+                sheet.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
 
         sheet.linepoints = [sheet.linepoints[-1]]
 
