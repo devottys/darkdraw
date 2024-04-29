@@ -304,7 +304,7 @@ class Drawing(TextCanvas):
         else:
             for r in self.rows:
                 if self.inFrame(r, frames):
-                    if box.contains(CharBox(None, r.x, r.y, r.w or dispwidth(r.text), r.h or 1)):
+                    if box.contains(CharBox(None, r.x, r.y, r.w or dispwidth(r.text or ''), r.h or 1)):
                         ret.append(r)
 
         return ret
