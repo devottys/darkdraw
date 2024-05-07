@@ -176,7 +176,7 @@ class DrawingSheet(JsonSheet):
                     break
 
             # copy all rows on frame1
-            thisframerows = list(copy(r) for r in self.rows if r.frame == f1.id)
+            thisframerows = list(copy(r) for r in self.rows if f1.id in r.frame.split())
             for r in thisframerows:
                 r.frame = newf.id
                 self.addRow(r)
@@ -329,7 +329,7 @@ class Drawing(TextCanvas):
         if r.type: return False  # frame or other non-element type
         if not r.frame: return True
         if not frames: return False
-        return any(r.frame == f.id for f in frames)
+        return any(f.id in r.frame.split() for f in frames)
 
     def moveToRow(self, rowstr):
         self.refresh()
