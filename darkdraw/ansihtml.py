@@ -1,6 +1,6 @@
 from unittest import mock
 from pkg_resources import resource_filename
-from visidata import AttrDict, VisiData, colors, vd
+from visidata import AttrDict, VisiData, colors, vd, dispwidth
 import curses
 
 from .drawing import Drawing, DrawingSheet
@@ -81,7 +81,58 @@ def htmlattrstr(r, attrnames, **kwargs):
     for a in attrnames:
         if a in r:
             d[a] = r[a]
-    return ' '.join('%s="%s"' % (k,v) for k, v in d.items())
+    return ' '.join('%s="%s"' % (k,v) for k, v in d.items() if v)
+
+
+def colorstr_to_style(color):
+    fg, bg, attrs = split_colorstr(color)
+
+    style = ''
+    classes = []
+    if 'underline' in attrs:
+#        style += f'text-decoration: underline; '
+        classes.append('underline')
+    if 'bold' in attrs:
+#        style += f'font-weight: bold; '
+        classes.append('bold')
+    if 'reverse' in attrs:
+        bg, fg = fg, bg
+    if bg:
+        bg = termcolor_to_css_color(bg)
+        style += f'background-color: {bg}; '
+    if fg:
+        fg = termcolor_to_css_color(fg)
+        style += f'color: {fg}; '
+    ret = dict(style=style)
+    if classes:
+        ret['class'] = ' '.join(classes)
+    return ret
+
+def iterline(dwg, y):
+    leftover = 0
+    for x in range(dwg.minX, dwg.maxX+1):
+#        if leftover:
+#            leftover -= 1
+#            continue
+
+        rows = dwg._displayedRows.get((x,y), None)
+        if not rows:
+            yield x, ' ', AttrDict()
+        else:
+            for i in range(len(rows)):
+                r = rows[-i-1]
+                if dispwidth(r.text) > x-r.x:
+                    break
+            if len(r.text) > x-r.x:
+                ch = r.text[x-r.x]
+                yield x, ch, r
+                leftover = dispwidth(ch) - 1
+            else:
+                yield x, ' ', AttrDict()
+
+
+def matches(a, b, attrs):
+    return all(a.get(attr) == b.get(attr) for attr in attrs)
 
 
 @VisiData.api
@@ -99,49 +150,37 @@ def save_ansihtml(vd, p, *sheets):
         dwg.reload()
         dwg.draw(dwg._scr)
         body = '''<pre>'''
+
         for y in range(dwg.minY, dwg.maxY+1):
-            for x in range(dwg.minX, dwg.maxX+1):
-                rows = dwg._displayedRows.get((x,y), None)
-                if not rows:
-                    body += '<span> </span>'
-                else:
-                    r = rows[-1]
-                    ch = r.text[x-r.x]
-                    fg, bg, attrs = split_colorstr(r.color)
+            line = ''
+            text = ''
+            lastrow = AttrDict()
+            for x, ch, r in iterline(dwg, y):
+                divch = f'<div>{ch}</div>'
+                if matches(r, lastrow, 'color id class href title'.split()):
+                    text += divch
+                    continue
 
-                    style = ''
-                    if 'underline' in attrs:
-                        style += f'text-decoration: underline; '
-                    if 'bold' in attrs:
-                        style += f'font-weight: bold; '
-                    if 'reverse' in attrs:
-                        bg, fg = fg, bg
-                    if bg:
-                        bg = termcolor_to_css_color(bg)
-                        style += f'background-color: {bg}; '
-                    if fg:
-                        fg = termcolor_to_css_color(fg)
-                        style += f'color: {fg}; '
+                if text:
+                    kwargs = colorstr_to_style(lastrow.color)
 
-                    spanattrstr = htmlattrstr(r, 'id class'.split(), style=style)
-                    span = f'<span {spanattrstr}>{ch}</span>'
-                    if r.href:
-                        if (x-r.x == 0):
-                            linkattrstr = htmlattrstr(r, 'href title'.split())
-                            body += f'<a {linkattrstr}>{span}'
-                        elif (x-r.x == len(r.text)-1):
-                            body += f'{span}</a>'
-                        else:
-                            body += span
-                    else:
-                        body += span
+                    spanattrstr = htmlattrstr(lastrow, 'id class'.split(), **kwargs)
+                    span = f'<span {spanattrstr}>{text}</span>'
+                    if lastrow.href:
+                        linkattrstr = htmlattrstr(lastrow, 'href title'.split())
+                        span = f'<a {linkattrstr}>{span}</a>'
 
-            body += '\n'
+                    line += span
+
+                text = divch
+                lastrow = r
+
+            body += f'<div>{line}</div>\n'
         body += '</pre>\n'
 
     try:
         tmpl = open(vs.options.darkdraw_html_tmpl).read()
-        out = tmpl.replace('<body>', '<body>'+body)
+        out = tmpl.replace('$body$', body)
     except FileNotFoundError:
         out = body
 
