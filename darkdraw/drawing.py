@@ -909,8 +909,8 @@ Drawing.addCommand('g+', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows,
 Drawing.addCommand('+', 'tag-cursor', 'sheet.tag_rows(sheet.cursorRows, vd.input("tag cursor as: ", type="tag"))')
 Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, vd.input("tag top of cursor as: ", type="tag"))')
 
-Drawing.addCommand('-', 'untag-cursor', 'untag_rows(sheet.cursorRows, vd.input("untag cursor as: ", type="tag"))')
-Drawing.addCommand('g-', 'untag-selected', 'untag_rows(sheet.someSelectedRows, vd.input("untag selected as: ", type="tag"))')
+Drawing.addCommand('-', 'untag-cursor', 'sheet.untag_rows(sheet.cursorRows, vd.input("untag cursor as: ", type="tag"))')
+Drawing.addCommand('g-', 'untag-selected', 'sheet.untag_rows(sheet.someSelectedRows, vd.input("untag selected as: ", type="tag"))')
 Drawing.addCommand('z-', 'untag-topcursor', 'sheet.untag_rows(sheet.topCursorRows, vd.input("untag top of cursor as: ", type="tag"))')
 
 Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
