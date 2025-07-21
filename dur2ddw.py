@@ -33,14 +33,14 @@ durdraw_color16_fg_map = {
 
 durdraw_color16_bg_map = {
         0: -1, #??
-    1: 4, # black
-    2: 2, # blue
-    3: 6, # green
-    4: 1, # cyan
-    5: 5, # red
-    6: 3, # magenta
-    7: 7, # yellow
-    8: 0, # light grey
+    1: 4, # blue
+    2: 2, # green
+    3: 6, # cyan
+    4: 1, # red
+    5: 5, # magenta
+    6: 3, # yellow
+    7: 7, # light grey
+    8: 0, # black
 }
 
 def convert_dur_to_ddw(infn, outfp):
@@ -63,6 +63,8 @@ def convert_dur_to_ddw(infn, outfp):
                 fg, bg = colors[x][y]
                 fg = durdraw_color16_fg_map[fg]
                 bg = durdraw_color16_bg_map[bg]
+                if ch == ' ' and bg == 0:
+                    continue
                 d = dict(x=x,
                          y=y,
                          text=ch,
