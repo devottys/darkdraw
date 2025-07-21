@@ -678,7 +678,35 @@ class Drawing(TextCanvas):
         modes = ['all', 'char', 'color']
         self.paste_mode = modes[(modes.index(self.paste_mode)+1)%len(modes)]
 
+    def fill_chars(self, srcrows, box):
+        it = itertools.cycle(srcrows or vd.fail("no clipboard to fill with"))
+        newrows = []
+        nfilled = 0
+        for newy in range(box.y1, box.y1+box.h):
+            newx = box.x1
+            while newx < box.x1+box.w:
+                oldr = next(it)
+                if self.paste_mode in 'all char':
+                    r = self.newRow()
+                    r.update(deepcopy(oldr))
+                    r.x, r.y = newx, newy
+                    r.text = oldr.text
+                    newrows.append(r)
+                    newx += dispwidth(r.text)
+                    nfilled += 1
+                    self.source.addRow(r)
+                elif self.paste_mode == 'color':
+                    if oldr.color and newx < box.x2 and newy < box.y2-1:
+                        for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
+                            nfilled += 1
+                            existing.color = oldr.color
+
+        vd.status(f'filled {nfilled} cells')
+        if nfilled == 0:
+            vd.warning(f'paste mode {self.paste_mode} had nothing to fill')
+
     def paste_chars(self, srcrows, box, n=None):
+        # n is number of rows deep to change color
         srcrows or vd.fail('no rows to paste')
 
         newrows = []
@@ -805,6 +833,7 @@ Drawing.addCommand('x', 'cut-char', 'sheet.copyRows(remove_at(cursorBox))')
 Drawing.addCommand('zx', 'cut-char-top', 'r=list(itercursor())[-1]; sheet.copyRows([r]); source.deleteBy(lambda r,row=r: r is row)')
 Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.memory.cliprows, cursorBox)')
 Drawing.addCommand('zp', 'paste-special', 'sheet.paste_special()')
+Drawing.addCommand('f', 'fill-chars', 'sheet.fill_chars(vd.memory.cliprows, cursorBox)', 'fill cursor with clipboard items')
 
 Drawing.addCommand('zh', 'go-left-obj', 'go_obj(-1, 0)')
 Drawing.addCommand('zj', 'go-down-obj', 'go_obj(0, +1)')
