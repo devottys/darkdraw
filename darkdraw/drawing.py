@@ -678,7 +678,7 @@ class Drawing(TextCanvas):
         modes = ['all', 'char', 'color']
         self.paste_mode = modes[(modes.index(self.paste_mode)+1)%len(modes)]
 
-    def fill_chars(self, srcrows, box):
+    def fill_chars(self, srcrows, box, n=None):
         it = itertools.cycle(srcrows or vd.fail("no clipboard to fill with"))
         newrows = []
         nfilled = 0
