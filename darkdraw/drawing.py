@@ -366,29 +366,33 @@ class Drawing(TextCanvas):
         except Exception as e:
             vd.exceptionCaught(e)
 
+
     def draw(self, scr):
         now = time.time()
         self.autosave()
         vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
-
+    
         thisframe = self.currentFrame
-        if self.autoplay_frames:
+        if self.autoplay_frames:                                         
             vd.timeouts_before_idle = -1
             ft, f = self.autoplay_frames[0]
             thisframe = f
             if not ft:
                 self.autoplay_frames[0][0] = now
-            elif now-ft > f.duration_ms/1000:  # frame expired
-#                vd.status('next frame after %0.3fs' % (now-ft))
+            elif now-ft > f.duration_ms/1000:
                 self.autoplay_frames.pop(0)
                 if self.autoplay_frames:
                     self.autoplay_frames[0][0] = now
                     thisframe = self.autoplay_frames[0][1]
                     vd.curses_timeout = thisframe.duration_ms
                 else:
-                    vd.status('ending autoplay')
-                    vd.timeouts_before_idle = 10
-                    vd.curses_timeout = 100
+                    # Reset to frame 0 by repopulating autoplay_frames
+                    self.autoplay_frames = [[0, f] for f in self.frames]
+                    self.cursorFrameIndex = 0
+                    self.autoplay_frames[0][0] = now
+                    thisframe = self.autoplay_frames[0][1]
+                    vd.curses_timeout = thisframe.duration_ms
+                    #vd.status('looped back to frame 0')
 
         self._displayedRows = defaultdict(list)  # (x, y) -> list of rows; actual screen layout (topmost last in list)
         self._tags = defaultdict(list)  # "tag" -> list of rows with that tag
@@ -501,6 +505,13 @@ class Drawing(TextCanvas):
 
         x = self.windowWidth-16
         x += clipdraw(scr, y, x, '  %s' % self.cursorBox, defattr)
+
+    def stop_animation(self):
+        self.autoplay_frames = []
+        self.cursorFrameIndex = 0
+        vd.timeouts_before_idle = 10
+        vd.curses_timeout = 100
+        vd.status('animation stopped')
 
     def reload(self):
         self.source.ensureLoaded()
@@ -956,6 +967,8 @@ Drawing.addCommand('m', 'swap-mark', '(cursorBox.x1, cursorBox.y1), sheet.mark=s
 Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+1)%3')
 Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
+
+Drawing.addCommand('q', 'stop-animation', 'sheet.stop_animation()', 'stop animation and return to frame 0')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
