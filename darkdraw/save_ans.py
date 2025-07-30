@@ -124,7 +124,6 @@ def export_frame(rows, x_col, y_col, text_col, color_col):
 
 @VisiData.api
 def save_ans(vd, p, sheet):
-    output_filename = p
     """Save the current sheet as an ANSI text file, exporting only rows with empty frame and type."""
     required_columns = ['x', 'y', 'text', 'color']
     columns_dict = {col.name: col for col in sheet.columns}
@@ -154,7 +153,6 @@ def save_ans(vd, p, sheet):
     # Export filtered rows as a single frame
     output = export_frame(filtered_rows, x_col, y_col, text_col, color_col)
 
-    output_filename = p
-    with open(output_filename, 'w') as f:
+    with open(p, 'w') as f:
         f.write(output)
-    vd.status(f'Saved {len(filtered_rows)} rows to {output_filename}')
+    vd.status(f'Saved {len(filtered_rows)} rows to {p}')
