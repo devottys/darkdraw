@@ -12,7 +12,7 @@ import json
 import gzip
 
 durdraw_color16_fg_map = {
-        0: -1, #??
+    0: -1, #??
     1: 0, # black
     2: 4, # blue
     3: 2, # green
@@ -32,7 +32,7 @@ durdraw_color16_fg_map = {
 }
 
 durdraw_color16_bg_map = {
-        0: -1, #??
+    0: -1, #??
     1: 4, # blue
     2: 2, # green
     3: 6, # cyan
@@ -50,11 +50,15 @@ def convert_dur_to_ddw(infn, outfp):
         n = f['frameNumber']
         lines = f['contents']
         colors = f['colorMap']
+        if f['delay'] == 0: ### if delay is not specified, find duration based on animation framerate
+            duration_ms = int(1000 // dur['DurMovie']['framerate'])
+        else: ### if specified, convert to ms
+            duration_ms = int(f['delay'] * 1000)
 
         d = dict(
             id=str(n),
             type='frame',
-            duration_ms=f['delay']
+            duration_ms=duration_ms
         )
         print(json.dumps(d), file=outfp)
 
