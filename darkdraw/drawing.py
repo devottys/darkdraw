@@ -366,14 +366,13 @@ class Drawing(TextCanvas):
         except Exception as e:
             vd.exceptionCaught(e)
 
-
     def draw(self, scr):
         now = time.time()
         self.autosave()
         vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
-    
+
         thisframe = self.currentFrame
-        if self.autoplay_frames:                                         
+        if self.autoplay_frames:
             vd.timeouts_before_idle = -1
             ft, f = self.autoplay_frames[0]
             thisframe = f
@@ -793,7 +792,7 @@ DrawingSheet.init('maxY', int)
 
 Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char')
 Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char')
-Drawing.addCommand(None, 'go-up',    'go_up()', 'go up one char')
+Drawing.addCommand(None, 'go-up',   'go_up()', 'go up one char')
 Drawing.addCommand(None, 'go-right', 'go_right()', 'go right one char in the palette')
 Drawing.addCommand(None, 'go-pagedown', 'go_pagedown(+1);', 'scroll one page forward in the palette')
 Drawing.addCommand(None, 'go-pageup', 'go_pagedown(-1)', 'scroll one page backward in the palette')
@@ -968,7 +967,7 @@ Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+
 Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 
-Drawing.addCommand('q', 'stop-animation', 'sheet.stop_animation()', 'stop animation and return to frame 0')
+Drawing.addCommand('^[p', 'stop-animation', 'sheet.stop_animation()', 'stop animation and return to frame 0')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
