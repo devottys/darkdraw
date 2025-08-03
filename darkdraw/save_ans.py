@@ -103,22 +103,14 @@ def export_frame(rows, x_col, y_col, text_col, color_col):
     output = ''
     for y in range(max_y + 1):
         line = ''
-        prev_codes = None
         for x in range(max_x + 1):
             cell = grid[y][x]
             if cell:
                 char, attributes, fg, bg = cell
                 codes = get_escape_codes(attributes, fg, bg)
-                if codes != prev_codes:
-                    line += codes
-                    prev_codes = codes
-                line += char
+                line += codes + char + '\033[0m'
             else:
-                if prev_codes != '\033[0m':
-                    line += '\033[0m'
-                    prev_codes = '\033[0m'
                 line += ' '
-        line += '\033[0m'
         output += line + '\n'
     return output
 
