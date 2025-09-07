@@ -17,9 +17,12 @@ vd.option('disp_guide_xy', '', 'x y position of onscreen guides')
 vd.option('autosave_interval_s', 0, 'seconds between autosave')
 vd.option('autosave_path', 'autosave', 'path to put autosave files')
 vd.option('ddw_add_baseframe', False, 'add text to baseframe instead of current frame')
+vd.option('ddw_charsets', ['▖▗▘▝▚▞▙▟▛▜'], 'darkdraw charsets to cycle through')
 
-vd.charPalWidth = charPalWidth = 16
-vd.charPalHeight = charPalHeight = 16
+#vd.charPalWidth = charPalWidth = 16
+#vd.charPalHeight = charPalHeight = 16
+
+vd.ddw_charset_index = 0
 
 @VisiData.api
 def open_ddw(vd, p):
@@ -470,12 +473,10 @@ class Drawing(TextCanvas):
                 clipdraw(scr, i+1, self.windowWidth-20, '  %02d: %7s  ' % (i+1, tag), colors[c])
 
         elif self.options.visibility == 2: # draw clipboard item shortcuts
-            if not vd.memory.cliprows:
-                return
-            for i, r in enumerate(vd.memory.cliprows[:10]):
+            for i, r in enumerate(vd.current_charset[:10]):
                 x = self.windowWidth-20
                 x += clipdraw(scr, i+1, x, '  %d: ' % (i+1), defattr)
-                x += clipdraw(scr, i+1, x, r.text + '  ', colors[r.color])
+                x += clipdraw(scr, i+1, x, r + '  ', defattr)
 
 
         # draw lstatus2 (paste status with default color)
@@ -488,6 +489,13 @@ class Drawing(TextCanvas):
         x += clipdraw(scr, y, x, '  default color: ', defattr)
         x += clipdraw(scr, y, x, '##', colors[vd.default_color])
         x += clipdraw(scr, y, x, ' %s' % vd.default_color, defattr)
+
+        x += 3
+
+        for i, r in enumerate(vd.current_charset[:10]):
+            x += clipdraw(scr, y, x, str(i+1)[-1], defattr)
+            x += clipdraw(scr, y, x, r, colors[vd.default_color])
+            x += 1
 
         # draw rstatus2 (cursor status)
         if hasattr(self, 'cursorRows') and self.cursorRows:
@@ -962,8 +970,21 @@ Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
 Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
 Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
 
+
+@VisiData.property
+def current_charset(vd):
+    return vd.options.ddw_charsets[vd.ddw_charset_index]
+
+@VisiData.api
+def boxchar(vd, ch):
+    return AttrDict(x=0, y=0, text=ch, color=vd.default_color)
+
+
+Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.ddw_charset_index = (vd.ddw_charset_index + 1) % len(vd.options.ddw_charsets)')
+Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.ddw_charset_index = (vd.ddw_charset_index - 1) % len(vd.options.ddw_charsets)')
+
 for i in range(1,10):
-    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([vd.memory.cliprows[%d]], cursorBox)'%(i-1))
+    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([boxchar(vd.current_charset[%d])], cursorBox)'%(i-1))
 
 Drawing.bindkey('zKEY_RIGHT', 'resize-cursor-wider')
 Drawing.bindkey('zKEY_LEFT', 'resize-cursor-thinner')
