@@ -980,11 +980,11 @@ def boxchar(vd, ch):
     return AttrDict(x=0, y=0, text=ch, color=vd.default_color)
 
 
-Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.ddw_charset_index = (vd.ddw_charset_index + 1) % len(vd.options.ddw_charsets)')
-Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.ddw_charset_index = (vd.ddw_charset_index - 1) % len(vd.options.ddw_charsets)')
+Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.ddw_charset_index = (vd.ddw_charset_index - 1) % len(vd.options.ddw_charsets)')
+Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.ddw_charset_index = (vd.ddw_charset_index + 1) % len(vd.options.ddw_charsets)')
 
 for i in range(1,10):
-    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([boxchar(vd.current_charset[%d])], cursorBox)'%(i-1))
+    Drawing.addCommand('%s'%str(i)[-1], f'paste-char-{i}', f'sheet.place_text(vd.current_charset[{i-1}], cursorBox)')
 
 Drawing.bindkey('zKEY_RIGHT', 'resize-cursor-wider')
 Drawing.bindkey('zKEY_LEFT', 'resize-cursor-thinner')
