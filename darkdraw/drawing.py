@@ -400,8 +400,16 @@ class Drawing(TextCanvas):
 
         self.yoffset = max(self.yoffset, 0)
         self.xoffset = max(self.xoffset, 0)
-        self.yoffset = min(self.yoffset, self.maxY+1)
-        self.xoffset = min(self.xoffset, self.maxX+1)
+
+        if self.cursorBox.y1 < self.yoffset:
+            self.yoffset -= 1
+        elif self.cursorBox.y1 >= self.yoffset + self.windowHeight - 1:
+            self.yoffset += 1
+
+        if self.cursorBox.x1 < self.xoffset:
+            self.xoffset -= 1
+        elif self.cursorBox.x1 >= self.xoffset + self.windowWidth - 1:
+            self.xoffset += 1
 
         def draw_guides(xmax, ymax):
             if ymax < self.windowHeight-1:
@@ -608,7 +616,9 @@ class Drawing(TextCanvas):
             self.pendir = 'l'
             self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
         else:
-            self.cursorBox.x1 -= 1
+            if self.cursorBox.x1 > 0:
+                self.cursorBox.x1 -= 1
+
 
     def go_right(self):
         if self.options.pen_down:
@@ -629,7 +639,8 @@ class Drawing(TextCanvas):
             self.pendir = 'u'
             self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
         else:
-            self.cursorBox.y1 -= 1
+            if self.cursorBox.y1 > 0:
+                self.cursorBox.y1 -= 1
 
     def go_pagedown(self, n):
         if n < 0:
@@ -639,15 +650,20 @@ class Drawing(TextCanvas):
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
+        self.xoffset = 0
 
     def go_rightmost(self):
         self.cursorBox.x1 = self.maxX
+        self.xoffset = max(0, self.cursorBox.x1 - self.windowWidth + 2)
 
     def go_top(self):
         self.cursorBox.y1 = 0
+        self.yoffset = 0
+
 
     def go_bottom(self):
         self.cursorBox.y1 = self.maxY
+        self.yoffset = max(0, self.cursorBox.y1 - self.windowHeight + 2)
 
     def go_forward(self, x, y):
         if self.pendir == 'd': self.cursorBox.y1 += y
@@ -674,7 +690,6 @@ class Drawing(TextCanvas):
             y += ydir
 
     def checkCursor(self):
-        super().checkCursor()
         self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
 
     def join_rows(dwg, rows):
@@ -968,8 +983,7 @@ Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor()
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
 Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
-Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
-
+Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 = max(0, sheet.cursorBox.y1 - n); sheet.yoffset = max(0, sheet.yoffset - n); sheet.refresh()')
 
 @VisiData.property
 def current_charset(vd):
