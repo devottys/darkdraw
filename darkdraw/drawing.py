@@ -476,7 +476,7 @@ class Drawing(TextCanvas):
             for i, r in enumerate(vd.current_charset[:10]):
                 x = self.windowWidth-20
                 x += clipdraw(scr, i+1, x, '  %d: ' % (i+1), defattr)
-                x += clipdraw(scr, i+1, x, r.text + '  ', defattr)
+                x += clipdraw(scr, i+1, x, r.text + '  ', colors[r.color])
 
 
         # draw lstatus2 (paste status with default color)
@@ -609,7 +609,7 @@ class Drawing(TextCanvas):
             self.pendir = 'l'
             self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
-            self.cursorBox.x1 -= 1
+            self.cursorBox.x1 = max(0, self.cursorBox.x1-1)
 
     def go_right(self):
         if self.options.pen_down:
@@ -630,7 +630,7 @@ class Drawing(TextCanvas):
             self.pendir = 'u'
             self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
-            self.cursorBox.y1 -= 1
+            self.cursorBox.y1 = max(0, self.cursorBox.y1-1)
 
     def go_pagedown(self, n):
         if n < 0:
@@ -640,15 +640,19 @@ class Drawing(TextCanvas):
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
+        self.xoffset = 0
 
     def go_rightmost(self):
         self.cursorBox.x1 = self.maxX
+        self.xoffset = max(0, self.cursorBox.x1 - self.windowWidth + 2)
 
     def go_top(self):
         self.cursorBox.y1 = 0
+        self.yoffset = 0
 
     def go_bottom(self):
         self.cursorBox.y1 = self.maxY
+        self.yoffset = max(0, self.cursorBox.y1 - self.windowHeight + 2)
 
     def go_forward(self, x, y):
         if self.pendir == 'd': self.cursorBox.y1 += y
@@ -675,8 +679,19 @@ class Drawing(TextCanvas):
             y += ydir
 
     def checkCursor(self):
-        super().checkCursor()
+        # super().checkCursor()
         self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
+
+        # smooth autoscroll
+        if self.cursorBox.y1 < self.yoffset:
+            self.yoffset = max(0, self.yoffset-1)
+        elif self.cursorBox.y1 >= self.yoffset + self.windowHeight-2:
+            self.yoffset += 1
+
+        if self.cursorBox.x1 < self.xoffset:
+            self.xoffset = max(0, self.xoffset-1)
+        elif self.cursorBox.x1 >= self.xoffset + self.windowWidth-1:
+            self.xoffset += 1
 
     def join_rows(dwg, rows):
         vd.addUndo(setattr, rows[0], 'text', rows[0].text)
