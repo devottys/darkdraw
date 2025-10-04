@@ -706,9 +706,11 @@ class Drawing(TextCanvas):
         it = itertools.cycle(srcrows or vd.fail("no clipboard to fill with"))
         newrows = []
         nfilled = 0
+        niters = 0
         for newy in range(box.y1, box.y1+box.h):
             newx = box.x1
-            while newx < box.x1+box.w:
+            while newx < box.x1+box.w and niters < 10000:
+                niters += 1
                 oldr = next(it)
                 if self.paste_mode in 'all char':
                     r = self.newRow()
@@ -716,7 +718,6 @@ class Drawing(TextCanvas):
                     r.x, r.y = newx, newy
                     r.text = oldr.text
                     newrows.append(r)
-                    newx += dispwidth(r.text)
                     nfilled += 1
                     self.source.addRow(r)
                 elif self.paste_mode == 'color':
@@ -724,6 +725,7 @@ class Drawing(TextCanvas):
                         for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                             nfilled += 1
                             existing.color = oldr.color
+                newx += dispwidth(oldr.text)
 
         vd.status(f'filled {nfilled} cells')
         if nfilled == 0:
