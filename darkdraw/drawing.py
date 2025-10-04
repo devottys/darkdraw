@@ -371,7 +371,7 @@ class Drawing(TextCanvas):
     def draw(self, scr):
         now = time.time()
         self.autosave()
-        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
+#        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
 
         thisframe = self.currentFrame
         if self.autoplay_frames:
