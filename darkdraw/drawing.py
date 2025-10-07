@@ -18,8 +18,10 @@ vd.option('autosave_interval_s', 0, 'seconds between autosave')
 vd.option('autosave_path', 'autosave', 'path to put autosave files')
 vd.option('ddw_add_baseframe', False, 'add text to baseframe instead of current frame')
 
-vd.charPalWidth = charPalWidth = 16
-vd.charPalHeight = charPalHeight = 16
+#vd.charPalWidth = charPalWidth = 16
+#vd.charPalHeight = charPalHeight = 16
+
+vd.ddw_charset_index = 0
 
 @VisiData.api
 def open_ddw(vd, p):
@@ -369,7 +371,7 @@ class Drawing(TextCanvas):
     def draw(self, scr):
         now = time.time()
         self.autosave()
-        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
+#        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
 
         thisframe = self.currentFrame
         if self.autoplay_frames:
@@ -470,9 +472,8 @@ class Drawing(TextCanvas):
                 clipdraw(scr, i+1, self.windowWidth-20, '  %02d: %7s  ' % (i+1, tag), colors[c])
 
         elif self.options.visibility == 2: # draw clipboard item shortcuts
-            if not vd.memory.cliprows:
-                return
-            for i, r in enumerate(vd.memory.cliprows[:10]):
+            x += clipdraw(scr, 0, self.windowWidth-20, 'clipboard %d' % vd.clipboard_index, colors['underline'])
+            for i, r in enumerate(vd.current_charset[:10]):
                 x = self.windowWidth-20
                 x += clipdraw(scr, i+1, x, '  %d: ' % (i+1), defattr)
                 x += clipdraw(scr, i+1, x, r.text + '  ', colors[r.color])
@@ -483,11 +484,19 @@ class Drawing(TextCanvas):
         x = 3
         x += clipdraw(scr, y, x, 'paste ' + self.paste_mode + ' ', defattr)
 
-        x += clipdraw(scr, y, x, ' %s %s ' % (len(vd.memory.cliprows or []), self.rowtype), defattr)
+        x += clipdraw(scr, y, x, ' %s %s ' % (len(vd.getClipboardRows() or []), self.rowtype), defattr)
 
         x += clipdraw(scr, y, x, '  default color: ', defattr)
         x += clipdraw(scr, y, x, '##', colors[vd.default_color])
         x += clipdraw(scr, y, x, ' %s' % vd.default_color, defattr)
+
+        x += 3
+        x += clipdraw(scr, y, x, ' %s: ' % vd.clipboard_index, defattr)
+
+        for i, r in enumerate(vd.current_charset[:10]):
+            x += clipdraw(scr, y, x, str(i+1)[-1], defattr)
+            x += clipdraw(scr, y, x, r.text, colors[vd.default_color])
+            x += 1
 
         # draw rstatus2 (cursor status)
         if hasattr(self, 'cursorRows') and self.cursorRows:
@@ -598,30 +607,30 @@ class Drawing(TextCanvas):
     def go_left(self):
         if self.options.pen_down:
             self.pendir = 'l'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
-            self.cursorBox.x1 -= 1
+            self.cursorBox.x1 = max(0, self.cursorBox.x1-1)
 
     def go_right(self):
         if self.options.pen_down:
             self.pendir = 'r'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
             self.cursorBox.x1 += 1
 
     def go_down(self):
         if self.options.pen_down:
             self.pendir = 'd'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
             self.cursorBox.y1 += 1
 
     def go_up(self):
         if self.options.pen_down:
             self.pendir = 'u'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
-            self.cursorBox.y1 -= 1
+            self.cursorBox.y1 = max(0, self.cursorBox.y1-1)
 
     def go_pagedown(self, n):
         if n < 0:
@@ -631,15 +640,19 @@ class Drawing(TextCanvas):
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
+        self.xoffset = 0
 
     def go_rightmost(self):
         self.cursorBox.x1 = self.maxX
+        self.xoffset = max(0, self.cursorBox.x1 - self.windowWidth + 2)
 
     def go_top(self):
         self.cursorBox.y1 = 0
+        self.yoffset = 0
 
     def go_bottom(self):
         self.cursorBox.y1 = self.maxY
+        self.yoffset = max(0, self.cursorBox.y1 - self.windowHeight + 2)
 
     def go_forward(self, x, y):
         if self.pendir == 'd': self.cursorBox.y1 += y
@@ -666,8 +679,19 @@ class Drawing(TextCanvas):
             y += ydir
 
     def checkCursor(self):
-        super().checkCursor()
+        # super().checkCursor()
         self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
+
+        # smooth autoscroll
+        if self.cursorBox.y1 < self.yoffset:
+            self.yoffset = max(0, self.yoffset-1)
+        elif self.cursorBox.y1 >= self.yoffset + self.windowHeight-2:
+            self.yoffset += 1
+
+        if self.cursorBox.x1 < self.xoffset:
+            self.xoffset = max(0, self.xoffset-1)
+        elif self.cursorBox.x1 >= self.xoffset + self.windowWidth-1:
+            self.xoffset += 1
 
     def join_rows(dwg, rows):
         vd.addUndo(setattr, rows[0], 'text', rows[0].text)
@@ -682,9 +706,11 @@ class Drawing(TextCanvas):
         it = itertools.cycle(srcrows or vd.fail("no clipboard to fill with"))
         newrows = []
         nfilled = 0
+        niters = 0
         for newy in range(box.y1, box.y1+box.h):
             newx = box.x1
-            while newx < box.x1+box.w:
+            while newx < box.x1+box.w and niters < 10000:
+                niters += 1
                 oldr = next(it)
                 if self.paste_mode in 'all char':
                     r = self.newRow()
@@ -692,7 +718,6 @@ class Drawing(TextCanvas):
                     r.x, r.y = newx, newy
                     r.text = oldr.text
                     newrows.append(r)
-                    newx += dispwidth(r.text)
                     nfilled += 1
                     self.source.addRow(r)
                 elif self.paste_mode == 'color':
@@ -700,6 +725,7 @@ class Drawing(TextCanvas):
                         for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                             nfilled += 1
                             existing.color = oldr.color
+                newx += dispwidth(oldr.text)
 
         vd.status(f'filled {nfilled} cells')
         if nfilled == 0:
@@ -745,9 +771,9 @@ class Drawing(TextCanvas):
 
     def paste_special(self):
         if self.paste_mode == 'color':  # top only
-            return self.paste_chars(vd.memory.cliprows, self.cursorBox, n=1)
+            return self.paste_chars(vd.getClipboardRows(), self.cursorBox, n=1)
 
-        for r in vd.memory.cliprows:
+        for r in vd.getClipboardRows():
             if r.type == 'group':
                 newr = self.newRow()
                 newr.type = 'ref'
@@ -768,6 +794,17 @@ class Drawing(TextCanvas):
         for r in rows:
             r.x = rows[0].x
 
+
+@VisiData.api
+def getClipboardRows(vd):
+    return vd.clipboard_pages[vd.clipboard_index]
+
+@VisiData.api
+def setClipboardRows(vd, rows):
+    vd.clipboard_pages[vd.clipboard_index] = rows
+
+vd.clipboard_index = 0
+vd.clipboard_pages = [list() for i in range(11)]
 
 Drawing.init('mode', str)
 Drawing.init('linepoints', list)
@@ -831,9 +868,9 @@ Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
 Drawing.addCommand('gy', 'yank-selected', 'sheet.copyRows(sheet.selectedRows)')
 Drawing.addCommand('x', 'cut-char', 'sheet.copyRows(remove_at(cursorBox))')
 Drawing.addCommand('zx', 'cut-char-top', 'r=list(itercursor())[-1]; sheet.copyRows([r]); source.deleteBy(lambda r,row=r: r is row)')
-Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.memory.cliprows, cursorBox)')
+Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.getClipboardRows(), cursorBox)')
 Drawing.addCommand('zp', 'paste-special', 'sheet.paste_special()')
-Drawing.addCommand('f', 'fill-chars', 'sheet.fill_chars(vd.memory.cliprows, cursorBox)', 'fill cursor with clipboard items')
+Drawing.addCommand('f', 'fill-chars', 'sheet.fill_chars(vd.getClipboardRows(), cursorBox)', 'fill cursor with clipboard items')
 
 Drawing.addCommand('zh', 'go-left-obj', 'go_obj(-1, 0)')
 Drawing.addCommand('zj', 'go-down-obj', 'go_obj(0, +1)')
@@ -962,8 +999,24 @@ Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
 Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
 Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
 
+
+@VisiData.property
+def current_charset(vd):
+    return vd.getClipboardRows()
+
+@VisiData.api
+def boxchar(vd, ch):
+    return AttrDict(x=0, y=0, text=ch, color=vd.default_color)
+
+
+Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
+Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
+
 for i in range(1,10):
-    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([vd.memory.cliprows[%d]], cursorBox)'%(i-1))
+    Drawing.addCommand('%s'%str(i)[-1], f'paste-char-{i}', f'sheet.place_text(vd.current_charset[{i-1}].text, cursorBox)')
+
+for i in range(0,10):
+    Drawing.addCommand('z%s'%str(i)[-1], f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
 
 Drawing.bindkey('zKEY_RIGHT', 'resize-cursor-wider')
 Drawing.bindkey('zKEY_LEFT', 'resize-cursor-thinner')
@@ -1005,7 +1058,7 @@ def set_linedraw_mode(sheet):
 @Drawing.api
 def next_point(sheet, x2, y2):
     if sheet.linepoints:
-        objs = vd.memory.cliprows
+        objs = vd.getClipboardRows()
         if not objs:
             r = sheet.newRow()
             r.text = '.'
