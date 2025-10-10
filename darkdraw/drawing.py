@@ -1013,11 +1013,7 @@ Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd
 Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
 
 for i in range(1, 10):
-    Drawing.addCommand(
-        f'{i}',
-        f'paste-char-{i}',
-        f'sheet.place_text(vd.current_charset[{i-1}].text, cursorBox, color=(vd.default_color if sheet.paste_mode=="char" else vd.current_charset[{i-1}].color)) if sheet.paste_mode!="color" else sheet.set_color(vd.current_charset[{i-1}].color)'
-    )
+    Drawing.addCommand(f'{i}', f'paste-char-{i}', f'sheet.place_text(vd.current_charset[{i-1}].text, cursorBox, color=(vd.default_color if sheet.paste_mode=="char" else vd.current_charset[{i-1}].color)) if sheet.paste_mode!="color" else sheet.set_color(vd.current_charset[{i-1}].color)')
     
 for i in range(0,10):
     Drawing.addCommand('z%s'%str(i)[-1], f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
