@@ -528,9 +528,9 @@ class Drawing(TextCanvas):
         self.modified = True
         return r
 
-    def place_text(self, text, box, dx=0, dy=0, go_forward=True):
+    def place_text(self, text, box, dx=0, dy=0, go_forward=True, color=None):
         'Return (width, height) of drawn text.'
-        self.add_text(text, box.x1, box.y1)
+        self.add_text(text, box.x1, box.y1, color or vd.default_color)
 
         if go_forward:
             self.go_forward(dispwidth(text)+dx, 1+dy)
@@ -1012,9 +1012,13 @@ def boxchar(vd, ch):
 Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
 Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
 
-for i in range(1,10):
-    Drawing.addCommand('%s'%str(i)[-1], f'paste-char-{i}', f'sheet.place_text(vd.current_charset[{i-1}].text, cursorBox)')
-
+for i in range(1, 10):
+    Drawing.addCommand(
+        f'{i}',
+        f'paste-char-{i}',
+        f'sheet.place_text(vd.current_charset[{i-1}].text, cursorBox, color=(vd.default_color if sheet.paste_mode=="char" else vd.current_charset[{i-1}].color)) if sheet.paste_mode!="color" else sheet.set_color(vd.current_charset[{i-1}].color)'
+    )
+    
 for i in range(0,10):
     Drawing.addCommand('z%s'%str(i)[-1], f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
 
