@@ -712,11 +712,13 @@ class Drawing(TextCanvas):
             while newx < box.x1+box.w and niters < 10000:
                 niters += 1
                 oldr = next(it)
-                if self.paste_mode in 'all char':
+                if self.paste_mode in ('all', 'char'):
                     r = self.newRow()
                     r.update(deepcopy(oldr))
                     r.x, r.y = newx, newy
                     r.text = oldr.text
+                    if self.paste_mode == 'char':
+                        r.color = vd.default_color
                     newrows.append(r)
                     nfilled += 1
                     self.source.addRow(r)
