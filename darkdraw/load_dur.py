@@ -1,15 +1,9 @@
-#!python3
-
-'''
-Usage:
-    $0 <drawing.dur>
-
-Convert <drawing.dur> to <drawing.dur>.ddw.
-'''
-
-import sys
 import json
 import gzip
+
+from visidata import VisiData
+from . import DrawingSheet
+
 
 durdraw_color16_fg_map = {
     0: 0, # black
@@ -43,8 +37,11 @@ durdraw_color16_bg_map = {
     8: 0, # also black
 }
 
-def convert_dur_to_ddw(infn, outfp):
-    dur = json.loads(gzip.open(infn).read())
+@VisiData.api
+def open_dur(vd, p):
+    dur = json.loads(gzip.open(str(p)).read())
+
+    rows = []
 
     for f in dur['DurMovie']['frames']:
         n = f['frameNumber']
@@ -60,7 +57,7 @@ def convert_dur_to_ddw(infn, outfp):
             type='frame',
             duration_ms=duration_ms
         )
-        print(json.dumps(d), file=outfp)
+        rows.append(d)
 
         for y, line in enumerate(lines):
             for x, ch in enumerate(line):
@@ -78,10 +75,6 @@ def convert_dur_to_ddw(infn, outfp):
                          color=f'{fg} on {bg}',
                          frame=str(n),
                         )
-                print(json.dumps(d), file=outfp)
+                rows.append(d)
 
-
-for fn in sys.argv[1:]:
-    outfn = fn + '.ddw'
-    with open(outfn, mode='w') as outfp:
-        convert_dur_to_ddw(fn, outfp)
+    return DrawingSheet(p.name, rows=rows).drawing
