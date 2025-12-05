@@ -871,8 +871,8 @@ Drawing.addCommand('g]', 'last-frame', 'sheet.cursorFrameIndex = sheet.nFrames-1
 Drawing.addCommand('z[', 'new-frame-before', 'sheet.new_between_frame(sheet.cursorFrameIndex-1, sheet.cursorFrameIndex)')
 Drawing.addCommand('z]', 'new-frame-after', 'sheet.new_between_frame(sheet.cursorFrameIndex, sheet.cursorFrameIndex+1); sheet.cursorFrameIndex += 1')
 
-Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
-Drawing.addCommand('gKEY_END', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
+Drawing.addCommand('gHome', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
+Drawing.addCommand('gEnd', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
 Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
 Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete selected rows on source sheet')
 
@@ -1047,10 +1047,10 @@ for i in range(1, 10):
 for i in range(0,10):
     Drawing.addCommand('z%s'%str(i)[-1], f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
 
-Drawing.bindkey('zKEY_RIGHT', 'resize-cursor-wider')
-Drawing.bindkey('zKEY_LEFT', 'resize-cursor-thinner')
-Drawing.bindkey('zKEY_UP', 'resize-cursor-shorter')
-Drawing.bindkey('zKEY_DOWN', 'resize-cursor-taller')
+Drawing.bindkey('zRight', 'resize-cursor-wider')
+Drawing.bindkey('zLeft', 'resize-cursor-thinner')
+Drawing.bindkey('zUp', 'resize-cursor-shorter')
+Drawing.bindkey('zDown', 'resize-cursor-taller')
 
 Drawing.bindkey('C', 'open-colors')
 Drawing.unbindkey('Ctrl+R')
