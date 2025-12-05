@@ -748,6 +748,7 @@ class Drawing(TextCanvas):
 
         newrows = []
         npasted = 0
+        frameset = set(r.frame for r in srcrows)
         x1, y1, x2, y2 = boundingBox(srcrows)
         for oldr in srcrows:
             if oldr.x is None:
@@ -762,8 +763,12 @@ class Drawing(TextCanvas):
             if self.paste_mode in 'all char':
                 r = self.newRow()
                 r.update(deepcopy(oldr))
-                if not self.options.ddw_add_baseframe:
+                if self.options.ddw_add_baseframe:
+                    r.frame = None
+                elif len(frameset) == 1:  # if all characters are only in a single frame, add to current frame instead
                     r.frame = self.currentFrame.id
+                # else use paste to their existing frame
+
                 r.text = oldr.text
                 r.x, r.y = newx, newy
                 if self.paste_mode == 'char':
