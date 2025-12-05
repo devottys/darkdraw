@@ -516,7 +516,6 @@ class Drawing(TextCanvas):
 
     def stop_animation(self):
         self.autoplay_frames = []
-        self.cursorFrameIndex = 0
         vd.timeouts_before_idle = 10
         vd.curses_timeout = 100
         vd.status('animation stopped')
