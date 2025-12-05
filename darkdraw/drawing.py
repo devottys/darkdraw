@@ -916,9 +916,9 @@ Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)', 'open unicode 
 Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)', 'push backing sheet for this drawing')
 DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)', 'push drawing for this backing sheet')
 
-Drawing.addCommand('^G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDesc}> {sheet.cursorCharName}")')
-DrawingSheet.addCommand(ENTER, 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
-DrawingSheet.addCommand('g'+ENTER, 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
+Drawing.addCommand('Ctrl+G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDesc}> {sheet.cursorCharName}")')
+DrawingSheet.addCommand('Enter', 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
+DrawingSheet.addCommand('gEnter', 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
 Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join selected objects into one text object')
 
 
@@ -990,10 +990,10 @@ Drawing.addCommand('z-', 'untag-topcursor', 'sheet.untag_rows(sheet.topCursorRow
 
 Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
 Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row)) or fail("no next selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to next selected row'),
-Drawing.addCommand('z^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor_top", source=cursorRow))')
-Drawing.addCommand('^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor", source=cursorRows))')
+Drawing.addCommand('zCtrl+Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor_top", source=cursorRow))')
+Drawing.addCommand('Ctrl+Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor", source=cursorRows))')
 
-Drawing.addCommand('^S', 'save-sheet', 'vd.saveSheets(inputPath("save to: ", value=source.getDefaultSaveName()), sheet.source)', 'save current drawing')
+Drawing.addCommand('Ctrl+S', 'save-sheet', 'vd.saveSheets(inputPath("save to: ", value=source.getDefaultSaveName()), sheet.source)', 'save current drawing')
 Drawing.addCommand('i', 'insert-row', 'for r in source.someSelectedRows: r.y += (r.y >= cursorBox.y1)', '')
 Drawing.addCommand('zi', 'insert-col', 'for r in source.someSelectedRows: r.x += (r.x >= cursorBox.x1)', '')
 
@@ -1003,10 +1003,10 @@ Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+
 Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 
-Drawing.addCommand('^[p', 'stop-animation', 'sheet.stop_animation()', 'stop animation and return to frame 0')
+Drawing.addCommand('Alt+p', 'stop-animation', 'sheet.stop_animation()', 'stop animation and return to frame 0')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
-Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
+Drawing.addCommand('Ctrl+G', 'toggle-help', 'vd.options.show_help = not vd.options.show_help')
 Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
 Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
 
@@ -1035,7 +1035,7 @@ Drawing.bindkey('zKEY_UP', 'resize-cursor-shorter')
 Drawing.bindkey('zKEY_DOWN', 'resize-cursor-taller')
 
 Drawing.bindkey('C', 'open-colors')
-Drawing.unbindkey('^R')
+Drawing.unbindkey('Ctrl+R')
 
 Drawing.init('mark', lambda: (0,0))
 Drawing.init('paste_mode', lambda: 'all')
