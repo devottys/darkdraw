@@ -1010,7 +1010,7 @@ Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+
 Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 
-Drawing.addCommand('Alt+p', 'stop-animation', 'sheet.stop_animation()', 'stop animation and return to frame 0')
+Drawing.addCommand('Alt+p', 'stop-animation', 'sheet.stop_animation()', 'stop animation')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('Ctrl+G', 'toggle-help', 'vd.options.show_help = not vd.options.show_help')
