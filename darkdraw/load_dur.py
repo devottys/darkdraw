@@ -1,7 +1,8 @@
 import json
+import io
 import gzip
 
-from visidata import VisiData
+from visidata import VisiData, Path
 from . import DrawingSheet
 
 
@@ -77,4 +78,6 @@ def open_dur(vd, p):
                         )
                 rows.append(d)
 
-    return DrawingSheet(p.name, rows=rows).drawing
+    ddwoutput = '\n'.join(json.dumps(r) for r in rows) + '\n'
+
+    return DrawingSheet(p.name, source=Path(str(p.with_suffix('.ddw')), fptext=io.StringIO(ddwoutput))).drawing
