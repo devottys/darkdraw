@@ -880,9 +880,9 @@ Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete s
 def input_canvas(sheet, box, row=None):
     kwargs = {}
     if row:
-        x, y = row.x, row.y
+        x, y = row.x-sheet.xoffset, row.y-sheet.yoffset
         kwargs['value'] = row.text
-        kwargs['i'] = box.x1-row.x
+        kwargs['i'] = box.x1-x
     else:
         x, y = box.x1-sheet.xoffset, box.y1-sheet.yoffset
 
