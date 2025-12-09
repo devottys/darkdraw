@@ -405,11 +405,6 @@ class Drawing(TextCanvas):
 
         selectedGroups = set()  # any group with a selected element
 
-        self.yoffset = max(self.yoffset, 0)
-        self.xoffset = max(self.xoffset, 0)
-        self.yoffset = min(self.yoffset, self.maxY+1)
-        self.xoffset = min(self.xoffset, self.maxX+1)
-
         def draw_guides(xmax, ymax):
             if ymax < self.windowHeight-1:
                 for x in range(xmax):
@@ -658,10 +653,8 @@ class Drawing(TextCanvas):
             self.cursorBox.y1 = max(0, self.cursorBox.y1-1)
 
     def go_pagedown(self, n):
-        if n < 0:
-            self.cursorBox.y1 = 0
-        else:
-            self.cursorBox.y1 = self.windowHeight-2
+        self.cursorBox.y1 += n * (self.windowHeight-3)
+        self.yoffset += n * (self.windowHeight-3)
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
@@ -707,16 +700,22 @@ class Drawing(TextCanvas):
         # super().checkCursor()
         self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
 
-        # smooth autoscroll
+        self.yoffset = max(0, self.yoffset)
+        self.xoffset = max(0, self.xoffset)
+        self.cursorBox.y1 = max(0, self.cursorBox.y1)
+        self.cursorBox.x1 = max(0, self.cursorBox.x1)
+        self.cursorBox.w = max(1, self.cursorBox.w)
+        self.cursorBox.h = max(1, self.cursorBox.h)
+
         if self.cursorBox.y1 < self.yoffset:
-            self.yoffset = max(0, self.yoffset-1)
-        elif self.cursorBox.y1 >= self.yoffset + self.windowHeight-2:
-            self.yoffset += 1
+            self.yoffset = self.cursorBox.y1
+        elif self.cursorBox.y1 > self.yoffset + self.windowHeight-3:
+            self.yoffset = self.cursorBox.y1 - self.windowHeight+3
 
         if self.cursorBox.x1 < self.xoffset:
-            self.xoffset = max(0, self.xoffset-1)
-        elif self.cursorBox.x1 >= self.xoffset + self.windowWidth-1:
-            self.xoffset += 1
+            self.xoffset = self.cursorBox.x1
+        elif self.cursorBox.x1 >= self.xoffset + self.windowWidth-2:
+            self.xoffset = self.cursorBox.x1 - self.windowWidth+2
 
     def join_rows(dwg, rows):
         vd.addUndo(setattr, rows[0], 'text', rows[0].text)
