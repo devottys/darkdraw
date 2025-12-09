@@ -1041,11 +1041,11 @@ def boxchar(vd, ch):
 Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
 Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
 
-for i in range(1, 10):
-    Drawing.addCommand(f'{i}', f'paste-char-{i}', f'place_text_n(cursorBox, {i-1})', '')
+for i in range(1, 11):
+    Drawing.addCommand(f'F{i}', f'paste-char-{i}', f'place_text_n(cursorBox, {i-1})', '')
 
-for i in range(0,10):
-    Drawing.addCommand('z%s'%str(i)[-1], f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
+for i in range(0, 11):
+    Drawing.addCommand(f'zF{i}', f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
 
 Drawing.bindkey('zRight', 'resize-cursor-wider')
 Drawing.bindkey('zLeft', 'resize-cursor-thinner')
