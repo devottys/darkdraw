@@ -181,7 +181,8 @@ def save_ansihtml(vd, p, *sheets):
     try:
         tmpl = open(vs.options.darkdraw_html_tmpl).read()
         out = tmpl.replace('$body$', body)
-    except FileNotFoundError:
+    except FileNotFoundError as e:
+        vd.exceptionCaught(e)
         out = body
 
     with p.open_text(mode='w') as fp:
