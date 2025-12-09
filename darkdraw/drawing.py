@@ -102,6 +102,7 @@ class DrawingSheet(JsonSheet):
     def addRow(self, row, **kwargs):
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
+        self.drawing.update_bounds()
         return row
 
     def iterdeep(self, rows, x=0, y=0, parents=None):
@@ -523,9 +524,12 @@ class Drawing(TextCanvas):
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
-        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
+        self.update_bounds()
         if self._scr:
             self.draw(self._scr)
+
+    def update_bounds(self):
+        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
 
     def add_text(self, text, x, y, color=''):
         r = self.newRow()
