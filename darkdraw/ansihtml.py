@@ -1,11 +1,11 @@
 from unittest import mock
-from pkg_resources import resource_filename
 from visidata import AttrDict, VisiData, colors, vd, dispwidth
+from importlib import resources as importlib_resources
 import curses
 
 from .drawing import Drawing, DrawingSheet
 
-vd.option('darkdraw_html_tmpl', resource_filename(__name__, 'ansi.html'), '')
+vd.option('darkdraw_html_tmpl', '', 'filename of HTML template to use for ansihtml saver')
 
 
 def split_colorstr(colorstr):
@@ -179,7 +179,11 @@ def save_ansihtml(vd, p, *sheets):
         body += '</pre>\n'
 
     try:
-        tmpl = open(vs.options.darkdraw_html_tmpl).read()
+        fn = vs.options.darkdraw_html_tmpl
+        if fn:
+            tmpl = open(fn).read()
+        else:
+            tmpl = importlib_resources.files('darkdraw').joinpath('ansi.html').read_bytes().decode()
         out = tmpl.replace('$body$', body)
     except FileNotFoundError as e:
         vd.exceptionCaught(e)
