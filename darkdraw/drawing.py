@@ -77,7 +77,7 @@ class DrawingSheet(JsonSheet):
         ItemColumn('y', type=int),
 
         ItemColumn('text'),  # for text objects (type == '')
-        ItemColumn('color'), # for text
+        ItemColumn('color', type=str), # for text
 
         # for all objects
         ItemColumn('tags'),  # for all objs
