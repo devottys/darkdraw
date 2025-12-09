@@ -657,8 +657,9 @@ class Drawing(TextCanvas):
             self.cursorBox.y1 = max(0, self.cursorBox.y1-1)
 
     def go_pagedown(self, n):
-        self.cursorBox.y1 += n * (self.windowHeight-3)
-        self.yoffset += n * (self.windowHeight-3)
+        dy = n*(self.windowHeight-3)
+        self.cursorBox.y1 += dy
+        self.yoffset += dy
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
@@ -1142,9 +1143,6 @@ Drawing.addCommand('Alt+p', 'stop-animation', 'sheet.stop_animation()', 'stop an
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
 Drawing.addCommand('Ctrl+G', 'toggle-help', 'vd.options.show_help = not vd.options.show_help')
-Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
-Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
-
 
 Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
 Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
