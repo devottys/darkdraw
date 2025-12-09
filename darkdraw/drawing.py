@@ -21,7 +21,11 @@ vd.option('ddw_add_baseframe', False, 'add text to baseframe instead of current 
 #vd.charPalWidth = charPalWidth = 16
 #vd.charPalHeight = charPalHeight = 16
 
+vd.default_color = ''
 vd.ddw_charset_index = 0
+vd.clipboard_index = 0
+vd.clipboard_pages = [list() for i in range(11)]
+
 
 @VisiData.api
 def open_ddw(vd, p):
@@ -35,6 +39,7 @@ vd.save_ddw = vd.save_jsonl
 @VisiData.lazy_property
 def words(vd):
     return [x.strip() for x in open('/usr/share/dict/words').readlines() if 3 <= len(x) < 8 and x.islower() and x.strip().isalpha()]
+
 
 @VisiData.api
 def random_word(vd):
@@ -830,8 +835,159 @@ def getClipboardRows(vd):
 def setClipboardRows(vd, rows):
     vd.clipboard_pages[vd.clipboard_index] = rows
 
-vd.clipboard_index = 0
-vd.clipboard_pages = [list() for i in range(11)]
+
+@Drawing.api
+def input_canvas(sheet, box, row=None):
+    kwargs = {}
+    if row:
+        x, y = row.x-sheet.xoffset, row.y-sheet.yoffset
+        kwargs['value'] = row.text
+        kwargs['i'] = box.x1-x
+    else:
+        x, y = box.x1-sheet.xoffset, box.y1-sheet.yoffset
+
+    return vd.editText(y, x, sheet.windowWidth-x, fillchar='', clear=False, **kwargs)
+
+
+@Drawing.api
+def flip_horiz(sheet, box):
+    for r in sheet.iterbox(box):
+        oldx = copy(r.x)
+        r.x = box.x2+box.x1-r.x-2
+        vd.addUndo(setattr, r, 'x', oldx)
+
+
+@Drawing.api
+def flip_vert(sheet, box):
+    for r in sheet.iterbox(box):
+        oldy = r.y
+        r.y = box.y2+box.y1-r.y-2
+        vd.addUndo(setattr, r, 'y', oldy)
+
+@Drawing.api
+def cycle_color(sheet, rows, n=1):
+    for r in rows:
+       clist = []
+       for c in r.color.split():
+           try:
+                c = str((int(c)+n) % 256)
+           except Exception:
+                pass
+           clist.append(c)
+       r.color = ''.join(clist)
+
+
+@Drawing.api
+def set_color(self, color):
+    for r in self.cursorRows:
+        oldcolor = copy(r.color)
+        r.color = color
+        vd.addUndo(setattr, r, 'color', oldcolor)
+
+@Drawing.api
+def select_top(sheet, box):
+    r = []
+    for x in range(box.x1, box.x2-1):
+        for y in range(box.y1, box.y2-1):
+            vd.status(x,y)
+            rows = sheet._displayedRows[(x,y)]
+            if rows:
+                r.append(rows[-1])
+    sheet.select(r)
+
+@VisiData.property
+def current_charset(vd):
+    return vd.getClipboardRows()
+
+@VisiData.api
+def boxchar(vd, ch):
+    return AttrDict(x=0, y=0, text=ch, color=vd.default_color)
+
+
+@Drawing.api
+def set_linedraw_mode(sheet):
+    if sheet.mode != 'linedraw':
+        sheet.mode = 'linedraw'
+        sheet.linepoints = []
+    else:
+        sheet.mode = ''
+        sheet.linepoints = []
+
+
+@Drawing.api
+def next_point(sheet, x2, y2):
+    if sheet.linepoints:
+        objs = vd.getClipboardRows()
+        if not objs:
+            r = sheet.newRow()
+            r.text = '.'
+            objs = [r]
+        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x2, y2):
+            sheet.draw_line(objs, *sheet.linepoints[0], x2, y2)
+        else:
+            xy1, xy3 = sheet.linepoints
+            objit = itertools.cycle(objs)
+            for x, y in bezier(*xy1, x2, y2, *xy3):
+                sheet.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
+
+        sheet.linepoints = [sheet.linepoints[-1]]
+
+
+@Drawing.api
+def click(sheet, x, y):
+    if sheet.mode == 'linedraw':
+        sheet.linepoints.append((x,y))
+
+    sheet.cursorBox = CharBox(None, x, y, 1, 1)
+
+@Drawing.api
+def release(sheet, x, y):
+    if sheet.mode == 'linedraw':
+        sheet.next_point(x, y)
+    else:
+        sheet.cursorBox.x2=x+2
+        sheet.cursorBox.y2=y+2
+        sheet.cursorBox.normalize()
+
+
+@Drawing.api
+def draw_line(self, objlist, x0, y0, x1, y1):
+    dx = abs(x1-x0)
+    sx = 1 if x0 < x1 else -1
+    dy = -abs(y1-y0)
+    sy = 1 if y0 < y1 else -1
+    error = dx + dy
+
+    objit = itertools.cycle(objlist)
+
+    while True:
+        row = next(objit)
+        self.paste_chars([row], CharBox(None, x0, y0, 1, 1))
+
+        if x0 == x1 and y0 == y1:
+            break
+        e2 = 2 * error
+        if e2 >= dy:
+            if x0 == x1: break
+            error += dy
+            x0 += sx
+        if e2 <= dx:
+            if y0 == y1: break
+            error += dx
+            y0 += sy
+
+
+@Drawing.api
+def qcurve(self, vertexes, objrows):
+        x1, y1 = vertexes[0]
+        x2, y2 = vertexes[1]
+        x3, y3 = vertexes[2]
+
+
+@Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
+def box_cursor(sheet):
+    pass
+
 
 Drawing.init('mode', str)
 Drawing.init('linepoints', list)
@@ -839,10 +995,29 @@ Drawing.init('cursorBox', lambda: CharBox(None, 0,0,1,1))
 Drawing.init('_displayedRows', dict)  # (x,y) -> list of rows
 Drawing.init('pendir', lambda: 'r')
 Drawing.init('disabled_tags', set)  # set of groupnames which should not be drawn or interacted with
+
 DrawingSheet.init('minX', int)
 DrawingSheet.init('minY', int)
 DrawingSheet.init('maxX', int)
 DrawingSheet.init('maxY', int)
+
+Drawing.init('mark', lambda: (0,0))
+Drawing.init('paste_mode', lambda: 'all')
+Drawing.init('cursorFrameIndex', lambda: 0)
+Drawing.init('autoplay_frames', list)
+Drawing.init('last_autosave', int)
+
+# (xoffset, yoffset) is absolute coordinate of upper left of viewport (0, 0)
+Drawing.init('yoffset', int)
+Drawing.init('xoffset', int)
+
+Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows} {sheet.rowtype}  {sheet.options.disp_selected_note}{sheet.source.nSelectedRows}'
+Drawing.class_options.quitguard='modified'
+Drawing.class_options.null_value=''
+DrawingSheet.class_options.null_value=''
+
+Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
+
 
 Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char')
 Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char')
@@ -875,19 +1050,6 @@ Drawing.addCommand('gHome', 'slide-top-selected', 'source.slide_top(source.someS
 Drawing.addCommand('gEnd', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
 Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
 Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete selected rows on source sheet')
-
-@Drawing.api
-def input_canvas(sheet, box, row=None):
-    kwargs = {}
-    if row:
-        x, y = row.x-sheet.xoffset, row.y-sheet.yoffset
-        kwargs['value'] = row.text
-        kwargs['i'] = box.x1-x
-    else:
-        x, y = box.x1-sheet.xoffset, box.y1-sheet.yoffset
-
-    return vd.editText(y, x, sheet.windowWidth-x, fillchar='', clear=False, **kwargs)
-
 Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, None), cursorBox)', 'place text string at cursor')
 Drawing.addCommand('e', 'edit-text', 'r=cursorRow; edit_text(input_canvas(cursorBox, r), r)')
 Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
@@ -940,54 +1102,6 @@ DrawingSheet.addCommand('gEnter', 'dive-selected', 'ret=sum(((r.rows or []) for 
 Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join selected objects into one text object')
 
 
-@Drawing.api
-def flip_horiz(sheet, box):
-    for r in sheet.iterbox(box):
-        oldx = copy(r.x)
-        r.x = box.x2+box.x1-r.x-2
-        vd.addUndo(setattr, r, 'x', oldx)
-
-
-@Drawing.api
-def flip_vert(sheet, box):
-    for r in sheet.iterbox(box):
-        oldy = r.y
-        r.y = box.y2+box.y1-r.y-2
-        vd.addUndo(setattr, r, 'y', oldy)
-
-@Drawing.api
-def cycle_color(sheet, rows, n=1):
-    for r in rows:
-       clist = []
-       for c in r.color.split():
-           try:
-                c = str((int(c)+n) % 256)
-           except Exception:
-                pass
-           clist.append(c)
-       r.color = ''.join(clist)
-
-
-@Drawing.api
-def set_color(self, color):
-    for r in self.cursorRows:
-        oldcolor = copy(r.color)
-        r.color = color
-        vd.addUndo(setattr, r, 'color', oldcolor)
-
-@Drawing.api
-def select_top(sheet, box):
-    r = []
-    for x in range(box.x1, box.x2-1):
-        for y in range(box.y1, box.y2-1):
-            vd.status(x,y)
-            rows = sheet._displayedRows[(x,y)]
-            if rows:
-                r.append(rows[-1])
-    sheet.select(r)
-
-
-
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
 Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
@@ -1029,15 +1143,6 @@ Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1
 Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
 
 
-@VisiData.property
-def current_charset(vd):
-    return vd.getClipboardRows()
-
-@VisiData.api
-def boxchar(vd, ch):
-    return AttrDict(x=0, y=0, text=ch, color=vd.default_color)
-
-
 Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
 Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
 
@@ -1055,113 +1160,12 @@ Drawing.bindkey('zDown', 'resize-cursor-taller')
 Drawing.bindkey('C', 'open-colors')
 Drawing.unbindkey('Ctrl+R')
 
-Drawing.init('mark', lambda: (0,0))
-Drawing.init('paste_mode', lambda: 'all')
-Drawing.init('cursorFrameIndex', lambda: 0)
-Drawing.init('autoplay_frames', list)
-Drawing.init('last_autosave', int)
-
-# (xoffset, yoffset) is absolute coordinate of upper left of viewport (0, 0)
-Drawing.init('yoffset', int)
-Drawing.init('xoffset', int)
-
-vd.default_color = ''
-Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows} {sheet.rowtype}  {sheet.options.disp_selected_note}{sheet.source.nSelectedRows}'
-Drawing.class_options.quitguard='modified'
-Drawing.class_options.null_value=''
-DrawingSheet.class_options.null_value=''
-
-Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
 BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
-
-@Drawing.api
-def set_linedraw_mode(sheet):
-    if sheet.mode != 'linedraw':
-        sheet.mode = 'linedraw'
-        sheet.linepoints = []
-    else:
-        sheet.mode = ''
-        sheet.linepoints = []
-
-
-@Drawing.api
-def next_point(sheet, x2, y2):
-    if sheet.linepoints:
-        objs = vd.getClipboardRows()
-        if not objs:
-            r = sheet.newRow()
-            r.text = '.'
-            objs = [r]
-        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x2, y2):
-            sheet.draw_line(objs, *sheet.linepoints[0], x2, y2)
-        else:
-            xy1, xy3 = sheet.linepoints
-            objit = itertools.cycle(objs)
-            for x, y in bezier(*xy1, x2, y2, *xy3):
-                sheet.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
-
-        sheet.linepoints = [sheet.linepoints[-1]]
-
-
-@Drawing.api
-def click(sheet, x, y):
-    if sheet.mode == 'linedraw':
-        sheet.linepoints.append((x,y))
-
-    sheet.cursorBox = CharBox(None, x, y, 1, 1)
-
-@Drawing.api
-def release(sheet, x, y):
-    if sheet.mode == 'linedraw':
-        sheet.next_point(x, y)
-    else:
-        sheet.cursorBox.x2=x+2
-        sheet.cursorBox.y2=y+2
-        sheet.cursorBox.normalize()
-
 Drawing.addCommand('.', 'next-point', 'next_point(cursorBox.x1, cursorBox.y1)', '')
 Drawing.addCommand('w', 'line-drawing-mode', 'set_linedraw_mode()', '')
 Drawing.addCommand('BUTTON1_PRESSED', 'click-cursor', 'click(mouseX, mouseY)', 'start cursor box with left mouse button press')
 Drawing.addCommand('BUTTON1_RELEASED', 'end-cursor', 'release(mouseX, mouseY)', 'end cursor box with left mouse button release')
 
-@Drawing.api
-def draw_line(self, objlist, x0, y0, x1, y1):
-    dx = abs(x1-x0)
-    sx = 1 if x0 < x1 else -1
-    dy = -abs(y1-y0)
-    sy = 1 if y0 < y1 else -1
-    error = dx + dy
-
-    objit = itertools.cycle(objlist)
-
-    while True:
-        row = next(objit)
-        self.paste_chars([row], CharBox(None, x0, y0, 1, 1))
-
-        if x0 == x1 and y0 == y1:
-            break
-        e2 = 2 * error
-        if e2 >= dy:
-            if x0 == x1: break
-            error += dy
-            x0 += sx
-        if e2 <= dx:
-            if y0 == y1: break
-            error += dx
-            y0 += sy
-
-
-@Drawing.api
-def qcurve(self, vertexes, objrows):
-        x1, y1 = vertexes[0]
-        x2, y2 = vertexes[1]
-        x3, y3 = vertexes[2]
-
-
-
-@Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
-def box_cursor(sheet):
-    pass
 
 vd.addMenuItem('File', 'New drawing', 'new-drawing')
 vd.addMenuItem('View', 'Unicode browser', 'open-unicode')
