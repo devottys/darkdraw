@@ -71,7 +71,7 @@ class FramesSheet(Sheet):
 class DrawingSheet(JsonSheet):
     rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags=[], .frame, .id, .rows=[] }
     columns=[
-        ItemColumn('id'),
+        ItemColumn('id', type=str),
         ItemColumn('type'),
         ItemColumn('x', type=int),
         ItemColumn('y', type=int),
@@ -82,7 +82,7 @@ class DrawingSheet(JsonSheet):
         # for all objects
         ItemColumn('tags'),  # for all objs
         ItemColumn('group'), # "
-        ItemColumn('frame'), # "
+        ItemColumn('frame', type=str), # "
 
         ItemColumn('rows'), # for groups
         ItemColumn('duration_ms', type=int), # for frames
