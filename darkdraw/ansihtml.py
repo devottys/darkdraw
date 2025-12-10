@@ -33,8 +33,8 @@ def split_colorstr(colorstr):
         return fgbgattrs
 
 
-
-def termcolor_to_rgb(n):
+# from visidata import xterm256_to_rgb (available VisiData v3.4)
+def xterm256_to_rgb(n:str|int):
     if not n:
         return (255,255,255)
     colordict = dict(
@@ -73,7 +73,7 @@ def termcolor_to_rgb(n):
 def termcolor_to_css_color(n):
     if not n.isdigit():
         return n
-    r,g,b = termcolor_to_rgb(n)
+    r,g,b = xterm256_to_rgb(n)
     return '#%02x%02x%02x' % (r,g,b)
 
 def htmlattrstr(r, attrnames, **kwargs):
