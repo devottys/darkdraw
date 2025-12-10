@@ -40,11 +40,11 @@ def createPillowImage(dwg):
             if x-r.x >= len(r.text): continue
             i = x-r.x
             s = r.text[i:]
-            fg, bg, attrs = colors.split_colorstr(r.color)
-            c = termcolor_to_rgb(fg)
+            fg, bg, attrs = colors._split_colorstr(r.color)
+            c = xterm256_to_rgb(fg)
             xy = ((r.x+i)*8, r.y*16)
             if bg:
-                draw.rectangle((xy, (xy[0]+16, xy[1]+8)), fill=termcolor_to_rgb(bg))
+                draw.rectangle((xy, (xy[0]+16, xy[1]+8)), fill=xterm256_to_rgb(bg))
             draw.text(xy, s, font=font, fill=c)
             if 'underline' in attrs:
                 draw.line((xy, (xy[0]+16, xy[1])), fill=c)
