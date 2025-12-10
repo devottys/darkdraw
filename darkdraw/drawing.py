@@ -103,6 +103,7 @@ class DrawingSheet(JsonSheet):
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
         self.drawing.update_bounds()
+        self.setModified()
         return row
 
     def iterdeep(self, rows, x=0, y=0, parents=None):
@@ -539,8 +540,16 @@ class Drawing(TextCanvas):
             r.frame = self.currentFrame.id
 
         self.source.addRow(r)
-        self.modified = True
         return r
+
+    @property
+    def hasBeenModified(self):
+        return self.source.hasBeenModified
+
+    @hasBeenModified.setter
+    def hasBeenModified(self, v:bool):
+        if self.source:
+            self.source.hasBeenModified = v
 
     def place_text(self, text, box, dx=0, dy=0, go_forward=True, color=None):
         'Return (width, height) of drawn text.'
