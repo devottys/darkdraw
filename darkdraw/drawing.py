@@ -7,7 +7,7 @@ import time
 import unicodedata
 from copy import copy, deepcopy
 from visidata import *
-from visidata import dispwidth, CharBox, boundingBox
+from visidata import dispwidth, CharBox, boundingBox, asyncthread
 from visidata.bezier import bezier
 
 
@@ -521,6 +521,7 @@ class Drawing(TextCanvas):
         vd.curses_timeout = 100
         vd.status('animation stopped')
 
+    @asyncthread
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
