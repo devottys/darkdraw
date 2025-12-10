@@ -17,9 +17,10 @@ All art and animations in this README were created by [dwimmer](https://www.inst
 ## Platform requirements
 
 - Linux, OS/X, or Windows (with WSL)
-- [Python 3.6+](https://www.python.org/downloads/)
-- [VisiData >= v2.3](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
+- [Python 3.7+](https://www.python.org/downloads/)
+- [VisiData >= v3.0](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
     - will be installed automatically through the installer
+- [unifont](https://www.unifoundry.com/pub/unifont/) for saving to .png
 
 ## Install
 
