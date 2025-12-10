@@ -709,8 +709,8 @@ class Drawing(TextCanvas):
         self.xoffset = max(0, self.xoffset)
         self.cursorBox.y1 = max(0, self.cursorBox.y1)
         self.cursorBox.x1 = max(0, self.cursorBox.x1)
-        self.cursorBox.w = max(1, self.cursorBox.w)
-        self.cursorBox.h = max(1, self.cursorBox.h)
+        self.cursorBox.w = max(0, self.cursorBox.w)
+        self.cursorBox.h = max(0, self.cursorBox.h)
 
         if self.cursorBox.y1 < self.yoffset:
             self.yoffset = self.cursorBox.y1
