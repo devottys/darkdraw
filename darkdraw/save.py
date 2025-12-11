@@ -1,11 +1,14 @@
-from visidata import VisiData, colors, vd
-from .drawing import Drawing, DrawingSheet
-from .ansihtml import termcolor_to_rgb
+from pathlib import Path
 from unittest import mock
+
+from visidata import VisiData, colors, vd
+
+from .drawing import Drawing, DrawingSheet
+from .ansihtml import xterm256_to_rgb
 
 from PIL import Image, ImageDraw, ImageFont
 
-vd.option('darkdraw_font', '/usr/share/fonts/truetype/unifont/unifont.ttf', 'path of TTF font file for save_png')
+vd.option('darkdraw_font', '/usr/share/fonts/opentype/unifont/unifont.otf', 'path of font file for save_png')
 vd.option('darkdraw_font_size', 16, 'font size for save_png')
 
 
@@ -14,7 +17,11 @@ def createPillowImage(dwg):
     im = Image.new("RGB", (640, 480), color=(0,0,0))
 
     draw = ImageDraw.Draw(im)
-    font = ImageFont.truetype(dwg.options.darkdraw_font, dwg.options.darkdraw_font_size)
+    font = None
+    if Path(dwg.options.darkdraw_font).exists():
+        font = ImageFont.truetype(dwg.options.darkdraw_font, dwg.options.darkdraw_font_size)
+    else:
+        vd.warning(f"{dwg.options.darkdraw_font} does not exist")
 
     vd.clearCaches()
     dwg._scr = mock.MagicMock(__bool__=mock.Mock(return_value=True),
@@ -33,11 +40,11 @@ def createPillowImage(dwg):
             if x-r.x >= len(r.text): continue
             i = x-r.x
             s = r.text[i:]
-            fg, bg, attrs = colors.split_colorstr(r.color)
-            c = termcolor_to_rgb(fg)
+            fg, bg, attrs = colors._split_colorstr(r.color)
+            c = xterm256_to_rgb(fg)
             xy = ((r.x+i)*8, r.y*16)
             if bg:
-                draw.rectangle((xy, (xy[0]+16, xy[1]+8)), fill=termcolor_to_rgb(bg))
+                draw.rectangle((xy, (xy[0]+16, xy[1]+8)), fill=xterm256_to_rgb(bg))
             draw.text(xy, s, font=font, fill=c)
             if 'underline' in attrs:
                 draw.line((xy, (xy[0]+16, xy[1])), fill=c)

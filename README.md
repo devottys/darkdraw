@@ -17,9 +17,10 @@ All art and animations in this README were created by [dwimmer](https://www.inst
 ## Platform requirements
 
 - Linux, OS/X, or Windows (with WSL)
-- [Python 3.6+](https://www.python.org/downloads/)
-- [VisiData >= v2.3](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
+- [Python 3.7+](https://www.python.org/downloads/)
+- [VisiData >= v3.0](https://github.com/saulpw/visidata), [requests](https://docs.python-requests.org/en/master/) and [wcwidth](https://github.com/jquast/wcwidth)
     - will be installed automatically through the installer
+- [unifont](https://www.unifoundry.com/pub/unifont/) for saving to .png
 
 ## Install
 
@@ -46,29 +47,10 @@ DarkDraw is a plugin for [VisiData](https://github.com/saulpw/visidata). There a
     vd
 ```
 
-3. Scroll down to "VisiData community plugins" and press `Enter`. Alternative press `Space`, and type `open-plugins`.
-
-4. Within the **Plugins Sheet** scroll down to darkdraw, and press `a` to install it. It will be available on the next launch.
-
-### Or install DarkDraw first
-
-0. Ensure Python3 and pip3 are installed on your system.
-
-```
-    python3 --version
-    pip3 --version
-```
-
-1. Install the latest darkdraw release from GitHub:
+3. Install the latest darkdraw release from GitHub:
 
 ```
     pip3 install git+https://github.com/devottys/darkdraw.git@master
-```
-
-2. Create a `.visidatarc` in your `$HOME` directory, and in it add:
-
-```
-    from darkdraw import *
 ```
 
 ### Use existing Dockerfile (default opens with a tutorial)
@@ -112,7 +94,7 @@ To start, you can play with some of the samples:
 or with the tutorial:
 
 ```
-vd https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw
+vd https://bluebird.sh/ddw/darkdraw-tutorial.ddw
 ```
 
 If pulling from the url does not work, try downloading the file, and then:

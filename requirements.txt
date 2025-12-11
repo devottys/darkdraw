@@ -1,3 +1,5 @@
-visidata>=2.3
+visidata>=3.0.2
 wcwidth
 Pillow
+requests
+setuptools

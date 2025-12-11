@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 
 from setuptools import setup
+from pathlib import Path
 
-__version__='0.3'
+def requirements():
+    return Path('requirements.txt').read_text().splitlines()
+
+__version__='0.3.1'
 
 setup(name='darkdraw',
       version=__version__,
@@ -11,8 +15,9 @@ setup(name='darkdraw',
       python_requires='>=3.7',
       url='bluebird.sh',
       py_modules=['darkdraw'],
-      install_requires=['visidata>=2.9', 'wcwidth', 'requests'],
+      install_requires=requirements(),
       packages=['darkdraw'],
       include_package_data=True,
+      entry_points={'visidata.plugins': 'darkdraw=darkdraw'},
       package_data={'darkdraw': ['darkdraw/ansi.html']},
 )

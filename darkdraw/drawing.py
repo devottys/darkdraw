@@ -1,11 +1,14 @@
 from unittest import mock
 from collections import defaultdict
 import itertools
-import random
+import functools
+from random import choice
 import time
 import unicodedata
+from copy import copy, deepcopy
 from visidata import *
-from visidata import CharBox, boundingBox
+from visidata import dispwidth, CharBox, boundingBox, asyncthread
+from visidata.bezier import bezier
 
 
 vd.allPrefixes += list('01')
@@ -13,9 +16,16 @@ vd.option('pen_down', False, 'is pen down')
 vd.option('disp_guide_xy', '', 'x y position of onscreen guides')
 vd.option('autosave_interval_s', 0, 'seconds between autosave')
 vd.option('autosave_path', 'autosave', 'path to put autosave files')
+vd.option('ddw_add_baseframe', False, 'add text to baseframe instead of current frame')
 
-vd.charPalWidth = charPalWidth = 16
-vd.charPalHeight = charPalHeight = 16
+#vd.charPalWidth = charPalWidth = 16
+#vd.charPalHeight = charPalHeight = 16
+
+vd.default_color = ''
+vd.ddw_charset_index = 0
+vd.clipboard_index = 0
+vd.clipboard_pages = [list() for i in range(11)]
+
 
 @VisiData.api
 def open_ddw(vd, p):
@@ -30,10 +40,11 @@ vd.save_ddw = vd.save_jsonl
 def words(vd):
     return [x.strip() for x in open('/usr/share/dict/words').readlines() if 3 <= len(x) < 8 and x.islower() and x.strip().isalpha()]
 
+
 @VisiData.api
 def random_word(vd):
     try:
-        return random.choice(vd.words)
+        return choice(vd.words)
     except FileNotFoundError:
         pass
     except Exception as e:
@@ -60,18 +71,18 @@ class FramesSheet(Sheet):
 class DrawingSheet(JsonSheet):
     rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags=[], .frame, .id, .rows=[] }
     columns=[
-        ItemColumn('id'),
+        ItemColumn('id', type=str),
         ItemColumn('type'),
         ItemColumn('x', type=int),
         ItemColumn('y', type=int),
 
         ItemColumn('text'),  # for text objects (type == '')
-        ItemColumn('color'), # for text
+        ItemColumn('color', type=str), # for text
 
         # for all objects
         ItemColumn('tags'),  # for all objs
         ItemColumn('group'), # "
-        ItemColumn('frame'), # "
+        ItemColumn('frame', type=str), # "
 
         ItemColumn('rows'), # for groups
         ItemColumn('duration_ms', type=int), # for frames
@@ -91,6 +102,8 @@ class DrawingSheet(JsonSheet):
     def addRow(self, row, **kwargs):
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
+        self.drawing.update_bounds()
+        self.setModified()
         return row
 
     def iterdeep(self, rows, x=0, y=0, parents=None):
@@ -107,6 +120,14 @@ class DrawingSheet(JsonSheet):
                     yield from self.iterdeep(r.rows or [], x+r.x, x+r.y, newparents)
             except Exception as e:
                 vd.exceptionCaught(e)
+
+    def untag_rows(self, rows, s):
+        col = self.column('tags')
+        for row in Progress(rows):
+            v = col.getValue(row)
+            assert isinstance(v, (list, tuple)), type(r).__name__
+            v = [x for x in v if x != s]
+            col.setValue(row, v)
 
     def tag_rows(self, rows, tagstr):
         tags = tagstr.split()
@@ -164,7 +185,7 @@ class DrawingSheet(JsonSheet):
                     break
 
             # copy all rows on frame1
-            thisframerows = list(copy(r) for r in self.rows if r.frame == f1.id)
+            thisframerows = list(copy(r) for r in self.rows if f1.id in r.frame.split())
             for r in thisframerows:
                 r.frame = newf.id
                 self.addRow(r)
@@ -292,12 +313,14 @@ class Drawing(TextCanvas):
         else:
             for r in self.rows:
                 if self.inFrame(r, frames):
-                    if box.contains(CharBox(None, r.x, r.y, r.w or dispwidth(r.text), r.h or 1)):
+                    if box.contains(CharBox(None, r.x, r.y, r.w or dispwidth(r.text or ''), r.h or 1)):
                         ret.append(r)
 
         return ret
 
     def __getattr__(self, k):
+        if k == 'source' or self.source is self:
+            return super().__getattr__(k)
         return getattr(self.source, k)
 
     @property
@@ -315,7 +338,7 @@ class Drawing(TextCanvas):
         if r.type: return False  # frame or other non-element type
         if not r.frame: return True
         if not frames: return False
-        return any(r.frame == f.id for f in frames)
+        return any(f.id in r.frame.split() for f in frames)
 
     def moveToRow(self, rowstr):
         self.refresh()
@@ -355,7 +378,7 @@ class Drawing(TextCanvas):
     def draw(self, scr):
         now = time.time()
         self.autosave()
-        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
+#        vd.getHelpPane('darkdraw', module='darkdraw').draw(scr, y=-1, x=-1)
 
         thisframe = self.currentFrame
         if self.autoplay_frames:
@@ -364,27 +387,25 @@ class Drawing(TextCanvas):
             thisframe = f
             if not ft:
                 self.autoplay_frames[0][0] = now
-            elif now-ft > f.duration_ms/1000:  # frame expired
-#                vd.status('next frame after %0.3fs' % (now-ft))
+            elif now-ft > f.duration_ms/1000:
                 self.autoplay_frames.pop(0)
                 if self.autoplay_frames:
                     self.autoplay_frames[0][0] = now
                     thisframe = self.autoplay_frames[0][1]
                     vd.curses_timeout = thisframe.duration_ms
                 else:
-                    vd.status('ending autoplay')
-                    vd.timeouts_before_idle = 10
-                    vd.curses_timeout = 100
+                    # Reset to frame 0 by repopulating autoplay_frames
+                    self.autoplay_frames = [[0, f] for f in self.frames]
+                    self.cursorFrameIndex = 0
+                    self.autoplay_frames[0][0] = now
+                    thisframe = self.autoplay_frames[0][1]
+                    vd.curses_timeout = thisframe.duration_ms
+                    #vd.status('looped back to frame 0')
 
         self._displayedRows = defaultdict(list)  # (x, y) -> list of rows; actual screen layout (topmost last in list)
         self._tags = defaultdict(list)  # "tag" -> list of rows with that tag
 
         selectedGroups = set()  # any group with a selected element
-
-        self.yoffset = max(self.yoffset, 0)
-        self.xoffset = max(self.xoffset, 0)
-        self.yoffset = min(self.yoffset, self.maxY+1)
-        self.xoffset = min(self.xoffset, self.maxX+1)
 
         def draw_guides(xmax, ymax):
             if ymax < self.windowHeight-1:
@@ -456,9 +477,8 @@ class Drawing(TextCanvas):
                 clipdraw(scr, i+1, self.windowWidth-20, '  %02d: %7s  ' % (i+1, tag), colors[c])
 
         elif self.options.visibility == 2: # draw clipboard item shortcuts
-            if not vd.memory.cliprows:
-                return
-            for i, r in enumerate(vd.memory.cliprows[:10]):
+            x += clipdraw(scr, 0, self.windowWidth-20, 'clipboard %d' % vd.clipboard_index, colors['underline'])
+            for i, r in enumerate(vd.current_charset[:10]):
                 x = self.windowWidth-20
                 x += clipdraw(scr, i+1, x, '  %d: ' % (i+1), defattr)
                 x += clipdraw(scr, i+1, x, r.text + '  ', colors[r.color])
@@ -469,11 +489,19 @@ class Drawing(TextCanvas):
         x = 3
         x += clipdraw(scr, y, x, 'paste ' + self.paste_mode + ' ', defattr)
 
-        x += clipdraw(scr, y, x, ' %s %s ' % (len(vd.memory.cliprows or []), self.rowtype), defattr)
+        x += clipdraw(scr, y, x, ' %s %s ' % (len(vd.getClipboardRows() or []), self.rowtype), defattr)
 
         x += clipdraw(scr, y, x, '  default color: ', defattr)
         x += clipdraw(scr, y, x, '##', colors[vd.default_color])
         x += clipdraw(scr, y, x, ' %s' % vd.default_color, defattr)
+
+        x += 3
+        x += clipdraw(scr, y, x, ' %s: ' % vd.clipboard_index, defattr)
+
+        for i, r in enumerate(vd.current_charset[:10]):
+            x += clipdraw(scr, y, x, str(i+1)[-1], defattr)
+            x += clipdraw(scr, y, x, r.text, colors[vd.default_color])
+            x += 1
 
         # draw rstatus2 (cursor status)
         if hasattr(self, 'cursorRows') and self.cursorRows:
@@ -488,23 +516,44 @@ class Drawing(TextCanvas):
         x = self.windowWidth-16
         x += clipdraw(scr, y, x, '  %s' % self.cursorBox, defattr)
 
+    def stop_animation(self):
+        self.autoplay_frames = []
+        vd.timeouts_before_idle = 10
+        vd.curses_timeout = 100
+        vd.status('animation stopped')
+
+    @asyncthread
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
-        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
+        self.update_bounds()
         if self._scr:
             self.draw(self._scr)
+
+    def update_bounds(self):
+        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
 
     def add_text(self, text, x, y, color=''):
         r = self.newRow()
         r.x, r.y, r.text, r.color = x, y, text, color
-        r.frame = self.currentFrame.id
-        self.source.addRow(r)
-        self.modified = True
+        if not self.options.ddw_add_baseframe:
+            r.frame = self.currentFrame.id
 
-    def place_text(self, text, box, dx=0, dy=0, go_forward=True):
+        self.source.addRow(r)
+        return r
+
+    @property
+    def hasBeenModified(self):
+        return self.source.hasBeenModified
+
+    @hasBeenModified.setter
+    def hasBeenModified(self, v:bool):
+        if self.source:
+            self.source.hasBeenModified = v
+
+    def place_text(self, text, box, dx=0, dy=0, go_forward=True, color=None):
         'Return (width, height) of drawn text.'
-        self.add_text(text, box.x1, box.y1)
+        self.add_text(text, box.x1, box.y1, color or vd.default_color)
 
         if go_forward:
             self.go_forward(dispwidth(text)+dx, 1+dy)
@@ -514,6 +563,17 @@ class Drawing(TextCanvas):
         if self.cursorBox.y1 > self.windowHeight-1:
             self.cursorBox.x1 += 1
             self.cursorBox.y1 = 1
+
+    def place_text_n(self, box, n):
+        if self.paste_mode == "color":
+            self.set_color(vd.current_charset[n].color)
+            return
+
+        color = None
+        if self.paste_mode != "char":
+            color = vd.current_charset[n].color
+
+        self.place_text(vd.current_charset[n].text, box, color=color)
 
     def edit_text(self, text, row):
         if row is None:
@@ -581,48 +641,51 @@ class Drawing(TextCanvas):
     def go_left(self):
         if self.options.pen_down:
             self.pendir = 'l'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
-            self.cursorBox.x1 -= 1
+            self.cursorBox.x1 = max(0, self.cursorBox.x1-1)
 
     def go_right(self):
         if self.options.pen_down:
             self.pendir = 'r'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
             self.cursorBox.x1 += 1
 
     def go_down(self):
         if self.options.pen_down:
             self.pendir = 'd'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
             self.cursorBox.y1 += 1
 
     def go_up(self):
         if self.options.pen_down:
             self.pendir = 'u'
-            self.place_text(ch, self.cursorBox, **vd.memory.cliprows[0])
+            self.place_text(ch, self.cursorBox, **vd.getClipboardRows()[0])
         else:
-            self.cursorBox.y1 -= 1
+            self.cursorBox.y1 = max(0, self.cursorBox.y1-1)
 
     def go_pagedown(self, n):
-        if n < 0:
-            self.cursorBox.y1 = 0
-        else:
-            self.cursorBox.y1 = self.windowHeight-2
+        dy = n*(self.windowHeight-3)
+        self.cursorBox.y1 += dy
+        self.yoffset += dy
 
     def go_leftmost(self):
         self.cursorBox.x1 = 0
+        self.xoffset = 0
 
     def go_rightmost(self):
         self.cursorBox.x1 = self.maxX
+        self.xoffset = max(0, self.cursorBox.x1 - self.windowWidth + 2)
 
     def go_top(self):
         self.cursorBox.y1 = 0
+        self.yoffset = 0
 
     def go_bottom(self):
         self.cursorBox.y1 = self.maxY
+        self.yoffset = max(0, self.cursorBox.y1 - self.windowHeight + 2)
 
     def go_forward(self, x, y):
         if self.pendir == 'd': self.cursorBox.y1 += y
@@ -649,8 +712,25 @@ class Drawing(TextCanvas):
             y += ydir
 
     def checkCursor(self):
-        super().checkCursor()
+        # super().checkCursor()
         self.cursorFrameIndex = max(min(self.cursorFrameIndex, len(self.frames)-1), 0)
+
+        self.yoffset = max(0, self.yoffset)
+        self.xoffset = max(0, self.xoffset)
+        self.cursorBox.y1 = max(0, self.cursorBox.y1)
+        self.cursorBox.x1 = max(0, self.cursorBox.x1)
+        self.cursorBox.w = max(0, self.cursorBox.w)
+        self.cursorBox.h = max(0, self.cursorBox.h)
+
+        if self.cursorBox.y1 < self.yoffset:
+            self.yoffset = self.cursorBox.y1
+        elif self.cursorBox.y1 > self.yoffset + self.windowHeight-3:
+            self.yoffset = self.cursorBox.y1 - self.windowHeight+3
+
+        if self.cursorBox.x1 < self.xoffset:
+            self.xoffset = self.cursorBox.x1
+        elif self.cursorBox.x1 >= self.xoffset + self.windowWidth-2:
+            self.xoffset = self.cursorBox.x1 - self.windowWidth+2
 
     def join_rows(dwg, rows):
         vd.addUndo(setattr, rows[0], 'text', rows[0].text)
@@ -661,11 +741,44 @@ class Drawing(TextCanvas):
         modes = ['all', 'char', 'color']
         self.paste_mode = modes[(modes.index(self.paste_mode)+1)%len(modes)]
 
+    def fill_chars(self, srcrows, box, n=None):
+        it = itertools.cycle(srcrows or vd.fail("no clipboard to fill with"))
+        newrows = []
+        nfilled = 0
+        niters = 0
+        for newy in range(box.y1, box.y1+box.h):
+            newx = box.x1
+            while newx < box.x1+box.w and niters < 10000:
+                niters += 1
+                oldr = next(it)
+                if self.paste_mode in ('all', 'char'):
+                    r = self.newRow()
+                    r.update(deepcopy(oldr))
+                    r.x, r.y = newx, newy
+                    r.text = oldr.text
+                    if self.paste_mode == 'char':
+                        r.color = vd.default_color
+                    newrows.append(r)
+                    nfilled += 1
+                    self.source.addRow(r)
+                elif self.paste_mode == 'color':
+                    if oldr.color and newx < box.x2 and newy < box.y2-1:
+                        for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
+                            nfilled += 1
+                            existing.color = oldr.color
+                newx += dispwidth(oldr.text)
+
+        vd.status(f'filled {nfilled} cells')
+        if nfilled == 0:
+            vd.warning(f'paste mode {self.paste_mode} had nothing to fill')
+
     def paste_chars(self, srcrows, box, n=None):
+        # n is number of rows deep to change color
         srcrows or vd.fail('no rows to paste')
 
         newrows = []
         npasted = 0
+        frameset = set(r.frame for r in srcrows)
         x1, y1, x2, y2 = boundingBox(srcrows)
         for oldr in srcrows:
             if oldr.x is None:
@@ -680,7 +793,12 @@ class Drawing(TextCanvas):
             if self.paste_mode in 'all char':
                 r = self.newRow()
                 r.update(deepcopy(oldr))
-                r.frame = self.currentFrame.id
+                if self.options.ddw_add_baseframe:
+                    r.frame = None
+                elif len(frameset) == 1:  # if all characters are only in a single frame, add to current frame instead
+                    r.frame = self.currentFrame.id
+                # else use paste to their existing frame
+
                 r.text = oldr.text
                 r.x, r.y = newx, newy
                 if self.paste_mode == 'char':
@@ -699,9 +817,9 @@ class Drawing(TextCanvas):
 
     def paste_special(self):
         if self.paste_mode == 'color':  # top only
-            return self.paste_chars(vd.memory.cliprows, self.cursorBox, n=1)
+            return self.paste_chars(vd.getClipboardRows(), self.cursorBox, n=1)
 
-        for r in vd.memory.cliprows:
+        for r in vd.getClipboardRows():
             if r.type == 'group':
                 newr = self.newRow()
                 newr.type = 'ref'
@@ -723,106 +841,26 @@ class Drawing(TextCanvas):
             r.x = rows[0].x
 
 
-Drawing.init('mode', str)
-Drawing.init('linepoints', list)
-Drawing.init('cursorBox', lambda: CharBox(None, 0,0,1,1))
-Drawing.init('_displayedRows', dict)  # (x,y) -> list of rows
-Drawing.init('pendir', lambda: 'r')
-Drawing.init('disabled_tags', set)  # set of groupnames which should not be drawn or interacted with
+@VisiData.api
+def getClipboardRows(vd):
+    return vd.clipboard_pages[vd.clipboard_index]
 
-Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char')
-Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char')
-Drawing.addCommand(None, 'go-up',    'go_up()', 'go up one char')
-Drawing.addCommand(None, 'go-right', 'go_right()', 'go right one char in the palette')
-Drawing.addCommand(None, 'go-pagedown', 'go_pagedown(+1);', 'scroll one page forward in the palette')
-Drawing.addCommand(None, 'go-pageup', 'go_pagedown(-1)', 'scroll one page backward in the palette')
+@VisiData.api
+def setClipboardRows(vd, rows):
+    vd.clipboard_pages[vd.clipboard_index] = rows
 
-Drawing.addCommand(None, 'go-leftmost', 'go_leftmost()', 'go all the way to the left of the palette')
-Drawing.addCommand(None, 'go-top', 'go_top()', 'go all the way to the top of the palette')
-Drawing.addCommand(None, 'go-bottom', 'go_bottom()', 'go all the way to the bottom ')
-Drawing.addCommand(None, 'go-rightmost', 'go_rightmost()', 'go all the way to the right')
-
-Drawing.addCommand('', 'pen-left', 'sheet.pendir="l"', '')
-Drawing.addCommand('', 'pen-down', 'sheet.pendir="d"', '')
-Drawing.addCommand('', 'pen-up', 'sheet.pendir="u"', '')
-Drawing.addCommand('', 'pen-right', 'sheet.pendir="r"', '')
-
-Drawing.addCommand('', 'align-x-selected', 'align_selected("x")')
-
-Drawing.addCommand('F', 'open-frames', 'vd.push(FramesSheet(sheet, "frames", source=sheet, rows=sheet.frames, cursorRowIndex=sheet.cursorFrameIndex))')
-Drawing.addCommand('[', 'prev-frame', 'sheet.cursorFrameIndex -= 1 if sheet.cursorFrameIndex > 0 else fail("first frame")')
-Drawing.addCommand(']', 'next-frame', 'sheet.cursorFrameIndex += 1 if sheet.cursorFrameIndex < sheet.nFrames-1 else fail("last frame")')
-Drawing.addCommand('g[', 'first-frame', 'sheet.cursorFrameIndex = 0')
-Drawing.addCommand('g]', 'last-frame', 'sheet.cursorFrameIndex = sheet.nFrames-1')
-Drawing.addCommand('z[', 'new-frame-before', 'sheet.new_between_frame(sheet.cursorFrameIndex-1, sheet.cursorFrameIndex)')
-Drawing.addCommand('z]', 'new-frame-after', 'sheet.new_between_frame(sheet.cursorFrameIndex, sheet.cursorFrameIndex+1); sheet.cursorFrameIndex += 1')
-
-Drawing.addCommand('gKEY_HOME', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
-Drawing.addCommand('gKEY_END', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
-Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
-Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete selected rows on source sheet')
 
 @Drawing.api
 def input_canvas(sheet, box, row=None):
     kwargs = {}
     if row:
-        x, y = row.x, row.y
+        x, y = row.x-sheet.xoffset, row.y-sheet.yoffset
         kwargs['value'] = row.text
-        kwargs['i'] = box.x1-row.x
+        kwargs['i'] = box.x1-x
     else:
         x, y = box.x1-sheet.xoffset, box.y1-sheet.yoffset
 
     return vd.editText(y, x, sheet.windowWidth-x, fillchar='', clear=False, **kwargs)
-
-Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, None), cursorBox)', 'place text string at cursor')
-Drawing.addCommand('e', 'edit-text', 'r=cursorRow; edit_text(input_canvas(cursorBox, r), r)')
-Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
-Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
-Drawing.addCommand('gy', 'yank-selected', 'sheet.copyRows(sheet.selectedRows)')
-Drawing.addCommand('x', 'cut-char', 'sheet.copyRows(remove_at(cursorBox))')
-Drawing.addCommand('zx', 'cut-char-top', 'r=list(itercursor())[-1]; sheet.copyRows([r]); source.deleteBy(lambda r,row=r: r is row)')
-Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.memory.cliprows, cursorBox)')
-Drawing.addCommand('zp', 'paste-special', 'sheet.paste_special()')
-
-Drawing.addCommand('zh', 'go-left-obj', 'go_obj(-1, 0)')
-Drawing.addCommand('zj', 'go-down-obj', 'go_obj(0, +1)')
-Drawing.addCommand('zk', 'go-up-obj', 'go_obj(0, -1)')
-Drawing.addCommand('zl', 'go-right-obj', 'go_obj(+1, 0)')
-
-Drawing.addCommand('g)', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
-Drawing.addCommand('g(', 'degroup-selected-temp', 'degrouped = sheet.degroup(source.someSelectedRows); source.clearSelected(); source.select(degrouped)')
-Drawing.addCommand('gz(', 'degroup-selected-perm', 'sheet.degroup_all()')
-Drawing.addCommand('gz)', 'regroup-selected', 'sheet.regroup(source.someSelectedRows)')
-DrawingSheet.addCommand('g)', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
-DrawingSheet.addCommand('g(', 'degroup-selected-perm', 'sheet.degroup_all()')
-DrawingSheet.addCommand('gz(', 'degroup-selected-temp', 'degroup = sheet.degroup(someSelectedRows); clearSelected(); select(degrouped)')
-DrawingSheet.addCommand('gz)', 'regroup-selected', 'sheet.regroup(someSelectedRows)')
-
-Drawing.addCommand('zs', 'select-top', 'select_top(cursorBox)')
-Drawing.addCommand('gzs', 'select-all-this-frame', 'sheet.select(list(source.gatherBy(lambda r,f=currentFrame: r.frame == f.id)))')
-Drawing.addCommand('gzu', 'unselect-all-this-frame', 'sheet.unselect(list(source.gatherBy(lambda r,f=currentFrame: r.frame == f.id)))')
-Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(lambda r,ch=cursorChar: r.text==ch)))')
-Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
-Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
-
-Drawing.addCommand('gs', 'select-all', 'source.select(itercursor(frames=source.frames))')
-Drawing.addCommand('gt', 'toggle-all', 'source.toggle(itercursor(frames=source.frames))')
-
-Drawing.addCommand('z00', 'enable-all-groups', 'disabled_tags.clear()')
-for i in range(1, 10):
-    Drawing.addCommand('%02d'%i, 'toggle-enabled-group-%s'%i, 'g=list(_tags.keys())[%s]; disabled_tags.remove(g) if g in disabled_tags else disabled_tags.add(g)' %(i-1))
-    Drawing.addCommand('g%02d'%i, 'select-group-%s'%i, 'g=list(_tags.keys())[%s]; source.select(source.gatherTag(g))' %(i-1))
-    Drawing.addCommand('z%02d'%i, 'unselect-group-%s'%i, 'g=list(_tags.keys())[%s]; source.unselect(source.gatherTag(g))' %(i-1))
-
-Drawing.addCommand('A', 'new-drawing', 'vd.push(vd.new_ddw(Path(vd.random_word()+".ddw")))', 'open blank drawing')
-Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)', 'open unicode character table')
-Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)', 'push backing sheet for this drawing')
-DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)', 'push drawing for this backing sheet')
-
-Drawing.addCommand('^G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDesc}> {sheet.cursorCharName}")')
-DrawingSheet.addCommand(ENTER, 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
-DrawingSheet.addCommand('g'+ENTER, 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
-Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join selected objects into one text object')
 
 
 @Drawing.api
@@ -871,71 +909,14 @@ def select_top(sheet, box):
                 r.append(rows[-1])
     sheet.select(r)
 
+@VisiData.property
+def current_charset(vd):
+    return vd.getClipboardRows()
 
+@VisiData.api
+def boxchar(vd, ch):
+    return AttrDict(x=0, y=0, text=ch, color=vd.default_color)
 
-Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
-Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
-Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
-Drawing.addCommand('<', 'cycle-cursor-prev', 'cycle_color(cursorRows, -1)')
-Drawing.addCommand('>', 'cycle-cursor-next', 'cycle_color(cursorRows, 1)')
-Drawing.addCommand('g<', 'color-selected-prev', 'cycle_color(selectedRows, -1)')
-Drawing.addCommand('g>', 'color-selected-next', 'cycle_color(selectedRows, 1)')
-Drawing.addCommand('z<', 'cycle-topcursor-prev', 'cycle_color(topCursorRows, -1)')
-Drawing.addCommand('z>', 'cycle-topcursor-next', 'cycle_color(topCursorRows, 1)')
-
-Drawing.addCommand('g+', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows, vd.input("tag selected as: ", type="tag"))')
-Drawing.addCommand('+', 'tag-cursor', 'sheet.tag_rows(sheet.cursorRows, vd.input("tag cursor as: ", type="tag"))')
-Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, vd.input("tag top of cursor as: ", type="tag"))')
-
-Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
-Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row)) or fail("no next selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to next selected row'),
-Drawing.addCommand('z^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor_top", source=cursorRow))')
-Drawing.addCommand('^Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor", source=cursorRows))')
-
-Drawing.addCommand('^S', 'save-sheet', 'vd.saveSheets(inputPath("save to: ", value=source.getDefaultSaveName()), sheet.source, confirm_overwrite=options.confirm_overwrite)', 'save current drawing')
-Drawing.addCommand('i', 'insert-row', 'for r in source.someSelectedRows: r.y += (r.y >= cursorBox.y1)', '')
-Drawing.addCommand('zi', 'insert-col', 'for r in source.someSelectedRows: r.x += (r.x >= cursorBox.x1)', '')
-
-Drawing.addCommand('zm', 'place-mark', 'sheet.mark=(cursorBox.x1, cursorBox.y1)')
-Drawing.addCommand('m', 'swap-mark', '(cursorBox.x1, cursorBox.y1), sheet.mark=sheet.mark, (cursorBox.x1, cursorBox.y1)')
-Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+1)%3')
-Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
-Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
-
-Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
-Drawing.addCommand('^G', 'toggle-help', 'vd.show_help = not vd.show_help')
-Drawing.addCommand('PgDn', 'page-down', 'n = windowHeight//2; sheet.cursorBox.y1 += n; sheet.yoffset += n; sheet.refresh()')
-Drawing.addCommand('PgUp', 'page-up', 'n = windowHeight//2; sheet.cursorBox.y1 -= n; sheet.yoffset -= n; sheet.refresh()')
-
-for i in range(1,10):
-    Drawing.addCommand('%s'%str(i)[-1], 'paste-char-%d'%i, 'sheet.paste_chars([vd.memory.cliprows[%d]])'%(i-1))
-
-Drawing.bindkey('zKEY_RIGHT', 'resize-cursor-wider')
-Drawing.bindkey('zKEY_LEFT', 'resize-cursor-thinner')
-Drawing.bindkey('zKEY_UP', 'resize-cursor-shorter')
-Drawing.bindkey('zKEY_DOWN', 'resize-cursor-taller')
-
-Drawing.bindkey('C', 'open-colors')
-Drawing.unbindkey('^R')
-
-Drawing.init('mark', lambda: (0,0))
-Drawing.init('paste_mode', lambda: 'all')
-Drawing.init('cursorFrameIndex', lambda: 0)
-Drawing.init('autoplay_frames', list)
-Drawing.init('last_autosave', int)
-
-# (xoffset, yoffset) is absolute coordinate of upper left of viewport (0, 0)
-Drawing.init('yoffset', int)
-Drawing.init('xoffset', int)
-
-vd.default_color = ''
-Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows} {sheet.rowtype}  {sheet.options.disp_selected_note}{sheet.source.nSelectedRows}'
-Drawing.class_options.quitguard='modified'
-Drawing.class_options.null_value=''
-DrawingSheet.class_options.null_value=''
-
-Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
-BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
 
 @Drawing.api
 def set_linedraw_mode(sheet):
@@ -950,13 +931,13 @@ def set_linedraw_mode(sheet):
 @Drawing.api
 def next_point(sheet, x2, y2):
     if sheet.linepoints:
-        objs = vd.memory.cliprows
+        objs = vd.getClipboardRows()
         if not objs:
             r = sheet.newRow()
             r.text = '.'
             objs = [r]
-        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x, y):
-            sheet.draw_line(objs, *sheet.linepoints[0], x, y)
+        if len(sheet.linepoints) == 1 or sheet.linepoints[-1] == (x2, y2):
+            sheet.draw_line(objs, *sheet.linepoints[0], x2, y2)
         else:
             xy1, xy3 = sheet.linepoints
             objit = itertools.cycle(objs)
@@ -964,7 +945,7 @@ def next_point(sheet, x2, y2):
             ctrlX = 2 * x2 - 0.5 * (xy1[0] + xy3[0])
             ctrlY = 2 * y2 - 0.5 * (xy1[1] + xy3[1])
             for x, y in bezier(*xy1, ctrlX, ctrlY, *xy3):
-                self.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
+                sheet.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
 
         sheet.linepoints = [sheet.linepoints[-1]]
 
@@ -985,10 +966,6 @@ def release(sheet, x, y):
         sheet.cursorBox.y2=y+2
         sheet.cursorBox.normalize()
 
-Drawing.addCommand('.', 'next-point', 'next_point(cursorBox.x1, cursorBox.y1)', '')
-Drawing.addCommand('w', 'line-drawing-mode', 'set_linedraw_mode()', '')
-Drawing.addCommand('BUTTON1_PRESSED', 'click-cursor', 'click(mouseX, mouseY)', 'start cursor box with left mouse button press')
-Drawing.addCommand('BUTTON1_RELEASED', 'end-cursor', 'release(mouseX, mouseY)', 'end cursor box with left mouse button release')
 
 @Drawing.api
 def draw_line(self, objlist, x0, y0, x1, y1):
@@ -1024,10 +1001,185 @@ def qcurve(self, vertexes, objrows):
         x3, y3 = vertexes[2]
 
 
-
 @Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
 def box_cursor(sheet):
     pass
+
+
+Drawing.init('mode', str)
+Drawing.init('linepoints', list)
+Drawing.init('cursorBox', lambda: CharBox(None, 0,0,1,1))
+Drawing.init('_displayedRows', dict)  # (x,y) -> list of rows
+Drawing.init('pendir', lambda: 'r')
+Drawing.init('disabled_tags', set)  # set of groupnames which should not be drawn or interacted with
+
+DrawingSheet.init('minX', int)
+DrawingSheet.init('minY', int)
+DrawingSheet.init('maxX', int)
+DrawingSheet.init('maxY', int)
+
+Drawing.init('mark', lambda: (0,0))
+Drawing.init('paste_mode', lambda: 'all')
+Drawing.init('cursorFrameIndex', lambda: 0)
+Drawing.init('autoplay_frames', list)
+Drawing.init('last_autosave', int)
+
+# (xoffset, yoffset) is absolute coordinate of upper left of viewport (0, 0)
+Drawing.init('yoffset', int)
+Drawing.init('xoffset', int)
+
+Drawing.class_options.disp_rstatus_fmt='{sheet.frameDesc} | {sheet.source.nRows} {sheet.rowtype}  {sheet.options.disp_selected_note}{sheet.source.nSelectedRows}'
+Drawing.class_options.quitguard='modified'
+Drawing.class_options.null_value=''
+DrawingSheet.class_options.null_value=''
+
+Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
+
+
+Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char')
+Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char')
+Drawing.addCommand(None, 'go-up',   'go_up()', 'go up one char')
+Drawing.addCommand(None, 'go-right', 'go_right()', 'go right one char in the palette')
+Drawing.addCommand(None, 'go-pagedown', 'go_pagedown(+1);', 'scroll one page forward in the palette')
+Drawing.addCommand(None, 'go-pageup', 'go_pagedown(-1)', 'scroll one page backward in the palette')
+
+Drawing.addCommand(None, 'go-leftmost', 'go_leftmost()', 'go all the way to the left of the palette')
+Drawing.addCommand(None, 'go-top', 'go_top()', 'go all the way to the top of the palette')
+Drawing.addCommand(None, 'go-bottom', 'go_bottom()', 'go all the way to the bottom ')
+Drawing.addCommand(None, 'go-rightmost', 'go_rightmost()', 'go all the way to the right')
+
+Drawing.addCommand('', 'pen-left', 'sheet.pendir="l"', '')
+Drawing.addCommand('', 'pen-down', 'sheet.pendir="d"', '')
+Drawing.addCommand('', 'pen-up', 'sheet.pendir="u"', '')
+Drawing.addCommand('', 'pen-right', 'sheet.pendir="r"', '')
+
+Drawing.addCommand('', 'align-x-selected', 'align_selected("x")')
+
+Drawing.addCommand('F', 'open-frames', 'vd.push(FramesSheet(sheet, "frames", source=sheet, rows=sheet.frames, cursorRowIndex=sheet.cursorFrameIndex))')
+Drawing.addCommand('[', 'prev-frame', 'sheet.cursorFrameIndex -= 1 if sheet.cursorFrameIndex > 0 else fail("first frame")')
+Drawing.addCommand(']', 'next-frame', 'sheet.cursorFrameIndex += 1 if sheet.cursorFrameIndex < sheet.nFrames-1 else fail("last frame")')
+Drawing.addCommand('g[', 'first-frame', 'sheet.cursorFrameIndex = 0')
+Drawing.addCommand('g]', 'last-frame', 'sheet.cursorFrameIndex = sheet.nFrames-1')
+Drawing.addCommand('z[', 'new-frame-before', 'sheet.new_between_frame(sheet.cursorFrameIndex-1, sheet.cursorFrameIndex)')
+Drawing.addCommand('z]', 'new-frame-after', 'sheet.new_between_frame(sheet.cursorFrameIndex, sheet.cursorFrameIndex+1); sheet.cursorFrameIndex += 1')
+
+Drawing.addCommand('gHome', 'slide-top-selected', 'source.slide_top(source.someSelectedRows, -1)', 'move selected items to top layer of drawing')
+Drawing.addCommand('gEnd', 'slide-bottom-selected', 'source.slide_top(source.someSelectedRows, 0)', 'move selected items to bottom layer of drawing')
+Drawing.addCommand('d', 'delete-cursor', 'remove_at(cursorBox)', 'delete first item under cursor')
+Drawing.addCommand('gd', 'delete-selected', 'source.deleteSelected()', 'delete selected rows on source sheet')
+Drawing.addCommand('a', 'add-input', 'place_text(input_canvas(cursorBox, None), cursorBox)', 'place text string at cursor')
+Drawing.addCommand('e', 'edit-text', 'r=cursorRow; edit_text(input_canvas(cursorBox, r), r)')
+Drawing.addCommand('ge', 'edit-selected', 'v=input("text: ", value=get_text())\nfor r in source.selectedRows: r.text=v')
+Drawing.addCommand('y', 'yank-char', 'sheet.copyRows(cursorRows)')
+Drawing.addCommand('gy', 'yank-selected', 'sheet.copyRows(sheet.selectedRows)')
+Drawing.addCommand('x', 'cut-char', 'sheet.copyRows(remove_at(cursorBox))')
+Drawing.addCommand('zx', 'cut-char-top', 'r=list(itercursor())[-1]; sheet.copyRows([r]); source.deleteBy(lambda r,row=r: r is row)')
+Drawing.addCommand('p', 'paste-chars', 'sheet.paste_chars(vd.getClipboardRows(), cursorBox)')
+Drawing.addCommand('zp', 'paste-special', 'sheet.paste_special()')
+Drawing.addCommand('f', 'fill-chars', 'sheet.fill_chars(vd.getClipboardRows(), cursorBox)', 'fill cursor with clipboard items')
+
+Drawing.addCommand('zh', 'go-left-obj', 'go_obj(-1, 0)')
+Drawing.addCommand('zj', 'go-down-obj', 'go_obj(0, +1)')
+Drawing.addCommand('zk', 'go-up-obj', 'go_obj(0, -1)')
+Drawing.addCommand('zl', 'go-right-obj', 'go_obj(+1, 0)')
+
+Drawing.addCommand('g)', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
+Drawing.addCommand('g(', 'degroup-selected-temp', 'degrouped = sheet.degroup(source.someSelectedRows); source.clearSelected(); source.select(degrouped)')
+Drawing.addCommand('gz(', 'degroup-selected-perm', 'sheet.degroup_all()')
+Drawing.addCommand('gz)', 'regroup-selected', 'sheet.regroup(source.someSelectedRows)')
+DrawingSheet.addCommand('g)', 'group-selected', 'sheet.group_selected(input("group name: ", value=random_word()))')
+DrawingSheet.addCommand('g(', 'degroup-selected-perm', 'sheet.degroup_all()')
+DrawingSheet.addCommand('gz(', 'degroup-selected-temp', 'degroup = sheet.degroup(someSelectedRows); clearSelected(); select(degrouped)')
+DrawingSheet.addCommand('gz)', 'regroup-selected', 'sheet.regroup(someSelectedRows)')
+
+Drawing.addCommand('zs', 'select-top', 'select_top(cursorBox)')
+Drawing.addCommand('gzs', 'select-all-this-frame', 'sheet.select(list(source.gatherBy(lambda r,f=currentFrame: r.frame == f.id)))')
+Drawing.addCommand('gzu', 'unselect-all-this-frame', 'sheet.unselect(list(source.gatherBy(lambda r,f=currentFrame: r.frame == f.id)))')
+Drawing.addCommand(',', 'select-equal-char', 'sheet.select(list(source.gatherBy(lambda r,ch=cursorChar: r.text==ch)))')
+Drawing.addCommand('|', 'select-tag', 'sheet.select_tag(input("select tag: ", type="group"))')
+Drawing.addCommand('\\', 'unselect-tag', 'sheet.unselect_tag(input("unselect tag: ", type="group"))')
+
+Drawing.addCommand('gs', 'select-all', 'source.select(itercursor(frames=source.frames))')
+Drawing.addCommand('gt', 'toggle-all', 'source.toggle(itercursor(frames=source.frames))')
+
+Drawing.addCommand('z00', 'enable-all-groups', 'disabled_tags.clear()')
+for i in range(1, 10):
+    Drawing.addCommand('%02d'%i, 'toggle-enabled-group-%s'%i, 'g=list(_tags.keys())[%s]; disabled_tags.remove(g) if g in disabled_tags else disabled_tags.add(g)' %(i-1))
+    Drawing.addCommand('g%02d'%i, 'select-group-%s'%i, 'g=list(_tags.keys())[%s]; source.select(source.gatherTag(g))' %(i-1))
+    Drawing.addCommand('z%02d'%i, 'unselect-group-%s'%i, 'g=list(_tags.keys())[%s]; source.unselect(source.gatherTag(g))' %(i-1))
+
+Drawing.addCommand('A', 'new-drawing', 'vd.push(vd.new_ddw(Path(vd.random_word()+".ddw")))', 'open blank drawing')
+Drawing.addCommand('M', 'open-unicode', 'vd.push(vd.unibrowser)', 'open unicode character table')
+Drawing.addCommand('`', 'push-source', 'vd.push(sheet.source)', 'push backing sheet for this drawing')
+DrawingSheet.addCommand('`', 'open-drawing', 'vd.push(sheet.drawing)', 'push drawing for this backing sheet')
+
+Drawing.addCommand('Ctrl+G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDesc}> {sheet.cursorCharName}")')
+DrawingSheet.addCommand('Enter', 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
+DrawingSheet.addCommand('gEnter', 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
+Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join selected objects into one text object')
+
+
+Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
+Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
+Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
+Drawing.addCommand('<', 'cycle-cursor-prev', 'cycle_color(cursorRows, -1)')
+Drawing.addCommand('>', 'cycle-cursor-next', 'cycle_color(cursorRows, 1)')
+Drawing.addCommand('g<', 'color-selected-prev', 'cycle_color(selectedRows, -1)')
+Drawing.addCommand('g>', 'color-selected-next', 'cycle_color(selectedRows, 1)')
+Drawing.addCommand('z<', 'cycle-topcursor-prev', 'cycle_color(topCursorRows, -1)')
+Drawing.addCommand('z>', 'cycle-topcursor-next', 'cycle_color(topCursorRows, 1)')
+
+Drawing.addCommand('g+', 'tag-selected', 'sheet.tag_rows(sheet.someSelectedRows, vd.input("tag selected as: ", type="tag"))')
+Drawing.addCommand('+', 'tag-cursor', 'sheet.tag_rows(sheet.cursorRows, vd.input("tag cursor as: ", type="tag"))')
+Drawing.addCommand('z+', 'tag-topcursor', 'sheet.tag_rows(sheet.topCursorRows, vd.input("tag top of cursor as: ", type="tag"))')
+
+Drawing.addCommand('-', 'untag-cursor', 'sheet.untag_rows(sheet.cursorRows, vd.input("untag cursor as: ", type="tag"))')
+Drawing.addCommand('g-', 'untag-selected', 'sheet.untag_rows(sheet.someSelectedRows, vd.input("untag selected as: ", type="tag"))')
+Drawing.addCommand('z-', 'untag-topcursor', 'sheet.untag_rows(sheet.topCursorRows, vd.input("untag top of cursor as: ", type="tag"))')
+
+Drawing.addCommand('{', 'go-prev-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row), reverse=True) or fail("no previous selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to previous selected row'),
+Drawing.addCommand('}', 'go-next-selected', 'source.moveToNextRow(lambda row,source=source: source.isSelected(row)) or fail("no next selected row"); sheet.cursorBox.x1=source.cursorRow.x; sheet.cursorBox.y1=source.cursorRow.y', 'go to next selected row'),
+Drawing.addCommand('zCtrl+Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor_top", source=cursorRow))')
+Drawing.addCommand('Ctrl+Y', 'pyobj-cursor', 'vd.push(PyobjSheet("cursor", source=cursorRows))')
+
+Drawing.addCommand('Ctrl+S', 'save-sheet', 'vd.saveSheets(inputPath("save to: ", value=source.getDefaultSaveName()), sheet.source)', 'save current drawing')
+Drawing.addCommand('i', 'insert-row', 'for r in source.someSelectedRows: r.y += (r.y >= cursorBox.y1)', '')
+Drawing.addCommand('zi', 'insert-col', 'for r in source.someSelectedRows: r.x += (r.x >= cursorBox.x1)', '')
+
+Drawing.addCommand('zm', 'place-mark', 'sheet.mark=(cursorBox.x1, cursorBox.y1)')
+Drawing.addCommand('m', 'swap-mark', '(cursorBox.x1, cursorBox.y1), sheet.mark=sheet.mark, (cursorBox.x1, cursorBox.y1)')
+Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+1)%3')
+Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
+Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
+
+Drawing.addCommand('Alt+p', 'stop-animation', 'sheet.stop_animation()', 'stop animation')
+
+Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
+Drawing.addCommand('Ctrl+G', 'toggle-help', 'vd.options.show_help = not vd.options.show_help')
+
+Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
+Drawing.addCommand('Alt+]', 'cycle-char-palette-up', 'vd.clipboard_index = (vd.clipboard_index + 1) % len(vd.clipboard_pages)')
+
+for i in range(1, 11):
+    Drawing.addCommand(f'F{i}', f'paste-char-{i}', f'place_text_n(cursorBox, {i-1})', '')
+
+for i in range(0, 11):
+    Drawing.addCommand(f'zF{i}', f'set-clipboard-page-{i}', f'vd.clipboard_index = {i}')
+
+Drawing.bindkey('zRight', 'resize-cursor-wider')
+Drawing.bindkey('zLeft', 'resize-cursor-thinner')
+Drawing.bindkey('zUp', 'resize-cursor-shorter')
+Drawing.bindkey('zDown', 'resize-cursor-taller')
+
+Drawing.bindkey('C', 'open-colors')
+Drawing.unbindkey('Ctrl+R')
+
+BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
+Drawing.addCommand('.', 'next-point', 'next_point(cursorBox.x1, cursorBox.y1)', '')
+Drawing.addCommand('w', 'line-drawing-mode', 'set_linedraw_mode()', '')
+Drawing.addCommand('BUTTON1_PRESSED', 'click-cursor', 'click(mouseX, mouseY)', 'start cursor box with left mouse button press')
+Drawing.addCommand('BUTTON1_RELEASED', 'end-cursor', 'release(mouseX, mouseY)', 'end cursor box with left mouse button release')
+
 
 vd.addMenuItem('File', 'New drawing', 'new-drawing')
 vd.addMenuItem('View', 'Unicode browser', 'open-unicode')
