@@ -941,7 +941,10 @@ def next_point(sheet, x2, y2):
         else:
             xy1, xy3 = sheet.linepoints
             objit = itertools.cycle(objs)
-            for x, y in bezier(*xy1, x2, y2, *xy3):
+            # reverse engineered bezier equation to draw with a point *on* the curve
+            ctrlX = 2 * x2 - 0.5 * (xy1[0] + xy3[0])
+            ctrlY = 2 * y2 - 0.5 * (xy1[1] + xy3[1])
+            for x, y in bezier(*xy1, ctrlX, ctrlY, *xy3):
                 sheet.paste_chars([next(objit)], CharBox(None, int(x), int(y), 1, 1))
 
         sheet.linepoints = [sheet.linepoints[-1]]
