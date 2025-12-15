@@ -795,6 +795,8 @@ class Drawing(TextCanvas):
                 r.update(deepcopy(oldr))
                 if self.options.ddw_add_baseframe:
                     r.frame = None
+                elif oldr.frame not in [f.id for f in self.frames]:
+                    r.frame = None
                 elif len(frameset) == 1:  # if all characters are only in a single frame, add to current frame instead
                     r.frame = self.currentFrame.id
                 # else use paste to their existing frame
