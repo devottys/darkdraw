@@ -8,6 +8,7 @@ from .ansihtml import * # save to .ansihtml
 from .save import *
 from .save_ans import *
 from .load_dur import *
+from .boxdraw import *
 
 from .loader_scr import *  # deprecated 2020 format, remove anytime
 
