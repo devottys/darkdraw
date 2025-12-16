@@ -464,7 +464,7 @@ class Drawing(TextCanvas):
                 if r.tags: selectedGroups |= set(r.tags)
             a = colors[c]
 
-            if (0 <= sy < self.windowHeight-1 and 0 <= sx < self.windowWidth):  # inside screen
+            if (0 <= sy < self.windowHeight-2 and 0 <= sx < self.windowWidth):  # inside screen
                 w = clipdraw(scr, sy, sx, r.text, a)
 
             for i in range(0, dispwidth(r.text)):
