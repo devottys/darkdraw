@@ -97,12 +97,12 @@ class DrawingSheet(JsonSheet):
 
     @property
     def minXY(self) -> int:
-        minX, minY, maxX, maxY = boundingBox(self.source.rows)
+        minX, minY, maxX, maxY = boundingBox(self.rows)
         return minX, minY
 
     @property
     def maxXY(self) -> int:
-        minX, minY, maxX, maxY = boundingBox(self.source.rows)
+        minX, minY, maxX, maxY = boundingBox(self.rows)
         return maxX, maxY
 
     @functools.cached_property
