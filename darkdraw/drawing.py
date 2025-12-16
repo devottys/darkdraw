@@ -95,6 +95,16 @@ class DrawingSheet(JsonSheet):
     def newRow(self):
         return AttrDict(x=None, y=None, text='', color='', tags=[], group='')
 
+    @property
+    def minXY(self) -> int:
+        minX, minY, maxX, maxY = boundingBox(self.source.rows)
+        return minX, minY
+
+    @property
+    def maxXY(self) -> int:
+        minX, minY, maxX, maxY = boundingBox(self.source.rows)
+        return maxX, maxY
+
     @functools.cached_property
     def drawing(self):
         return Drawing(self.name+".ddw", source=self)
@@ -102,7 +112,6 @@ class DrawingSheet(JsonSheet):
     def addRow(self, row, **kwargs):
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
-        self.drawing.update_bounds()
         self.setModified()
         return row
 
@@ -286,8 +295,9 @@ class DrawingSheet(JsonSheet):
         with p.open_text(mode='w') as fp:
             for vs in sheets:
                 line = ''
-                for y in range(dwg.maxY+1):
-                    for x in range(dwg.maxX+1):
+                maxX, maxY = dwg.maxXY
+                for y in range(maxY+1):
+                    for x in range(maxX+1):
                         r = dwg._displayedRows.get((x,y), None)
                         if r: line += r[-1].text[x-r[-1].x]
                         else: line += ' '
@@ -526,12 +536,8 @@ class Drawing(TextCanvas):
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
-        self.update_bounds()
         if self._scr:
             self.draw(self._scr)
-
-    def update_bounds(self):
-        self.minX, self.minY, self.maxX, self.maxY = boundingBox(self.source.rows)
 
     def add_text(self, text, x, y, color=''):
         r = self.newRow()
@@ -676,7 +682,7 @@ class Drawing(TextCanvas):
         self.xoffset = 0
 
     def go_rightmost(self):
-        self.cursorBox.x1 = self.maxX
+        self.cursorBox.x1, _ = self.maxXY
         self.xoffset = max(0, self.cursorBox.x1 - self.windowWidth + 2)
 
     def go_top(self):
@@ -684,7 +690,7 @@ class Drawing(TextCanvas):
         self.yoffset = 0
 
     def go_bottom(self):
-        self.cursorBox.y1 = self.maxY
+        _, self.cursorBox.y1 = self.maxXY
         self.yoffset = max(0, self.cursorBox.y1 - self.windowHeight + 2)
 
     def go_forward(self, x, y):
@@ -1014,11 +1020,6 @@ Drawing.init('cursorBox', lambda: CharBox(None, 0,0,1,1))
 Drawing.init('_displayedRows', dict)  # (x,y) -> list of rows
 Drawing.init('pendir', lambda: 'r')
 Drawing.init('disabled_tags', set)  # set of groupnames which should not be drawn or interacted with
-
-DrawingSheet.init('minX', int)
-DrawingSheet.init('minY', int)
-DrawingSheet.init('maxX', int)
-DrawingSheet.init('maxY', int)
 
 Drawing.init('mark', lambda: (0,0))
 Drawing.init('paste_mode', lambda: 'all')

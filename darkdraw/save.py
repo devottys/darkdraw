@@ -29,8 +29,10 @@ def createPillowImage(dwg):
     dwg.draw(dwg._scr)
 
     displayed = set()
-    for y in range(dwg.minY, dwg.maxY+1):
-        for x in range(dwg.minX, dwg.maxX+1):
+    minX, minY = dwg.minXY
+    maxX, maxY = dwg.maxXY
+    for y in range(minY, maxY+1):
+        for x in range(minX, maxX+1):
             rows = dwg._displayedRows.get((x,y), None)
             if not rows: continue
             r = rows[-1]

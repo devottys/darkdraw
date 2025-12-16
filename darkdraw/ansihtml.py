@@ -110,7 +110,9 @@ def colorstr_to_style(color):
 
 def iterline(dwg, y):
     leftover = 0
-    for x in range(dwg.minX, dwg.maxX+1):
+    minX, minY = dwg.minXY
+    maxX, maxY = dwg.maxXY
+    for x in range(minX, maxX+1):
 #        if leftover:
 #            leftover -= 1
 #            continue
@@ -151,7 +153,9 @@ def save_ansihtml(vd, p, *sheets):
         dwg.draw(dwg._scr)
         body = '''<pre>'''
 
-        for y in range(dwg.minY, dwg.maxY+1):
+        minX, minY = dwg.minXY
+        maxX, maxY = dwg.maxXY
+        for y in range(minY, maxY+1):
             line = ''
             text = ''
             lastrow = AttrDict()
