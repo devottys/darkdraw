@@ -497,7 +497,7 @@ class Drawing(TextCanvas):
         # draw lstatus2 (paste status with default color)
         y = self.windowHeight-2
         x = 3
-        x += clipdraw(scr, y, x, 'paste ' + self.paste_mode + ' ', defattr)
+        x += clipdraw(scr, y, x, f'paste {self.paste_mode} {"base" if self.options.ddw_add_baseframe else ""} ', defattr)
 
         x += clipdraw(scr, y, x, ' %s %s ' % (len(vd.getClipboardRows() or []), self.rowtype), defattr)
 
@@ -762,6 +762,7 @@ class Drawing(TextCanvas):
                     r.update(deepcopy(oldr))
                     r.x, r.y = newx, newy
                     r.text = oldr.text
+                    r.frame = None if self.options.ddw_add_baseframe else self.currentFrame.id
                     if self.paste_mode == 'char':
                         r.color = vd.default_color
                     newrows.append(r)
@@ -1158,6 +1159,7 @@ Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor()
 Drawing.addCommand('Alt+p', 'stop-animation', 'sheet.stop_animation()', 'stop animation')
 
 Drawing.addCommand(';', 'cycle-paste-mode', 'sheet.cycle_paste_mode()')
+Drawing.addCommand('g;', 'set-paste-base', 'sheet.options.ddw_add_baseframe = not sheet.options.ddw_add_baseframe')
 Drawing.addCommand('Ctrl+G', 'toggle-help', 'vd.options.show_help = not vd.options.show_help')
 
 Drawing.addCommand('Alt+[', 'cycle-char-palette-down', 'vd.clipboard_index = (vd.clipboard_index - 1) % len(vd.clipboard_pages)')
