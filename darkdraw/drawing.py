@@ -1125,6 +1125,8 @@ Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join
 
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
+Drawing.addCommand('gc', 'set-default-color-input', 'vd.default_color=input("set default color: ", value=vd.default_color)')
+Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color))')
 Drawing.addCommand('<', 'cycle-cursor-prev', 'cycle_color(cursorRows, -1)')
 Drawing.addCommand('>', 'cycle-cursor-next', 'cycle_color(cursorRows, 1)')
@@ -1154,7 +1156,6 @@ Drawing.addCommand('zm', 'place-mark', 'sheet.mark=(cursorBox.x1, cursorBox.y1)'
 Drawing.addCommand('m', 'swap-mark', '(cursorBox.x1, cursorBox.y1), sheet.mark=sheet.mark, (cursorBox.x1, cursorBox.y1)')
 Drawing.addCommand('v', 'visibility', 'options.visibility = (options.visibility+1)%3')
 Drawing.addCommand('r', 'reset-time', 'sheet.autoplay_frames.extend([[0, f] for f in sheet.frames])')
-Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 
 Drawing.addCommand('zr', 'stop-animation', 'sheet.stop_animation()', 'stop animation')
 
