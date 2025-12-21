@@ -130,13 +130,9 @@ def open_ans(vd, p):
                         y=y,
                         text=ch,
                         color=color_str,
-                        frame='0',
                     ))
                 x += 1
             pos += 1
-    
-    # Add frame metadata
-    rows.insert(0, dict(id='0', type='frame', duration_ms=0))
     
     ddwoutput = '\n'.join(json.dumps(r) for r in rows) + '\n'
     
