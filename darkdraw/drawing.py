@@ -315,8 +315,8 @@ class Drawing(TextCanvas):
         'If *frames* is None, return top *n* elements from each cell within the given box (current frame falling back to base frame).  Otherwise return all elements from each cell within the given box (so base frame + current frame).  Otherwise return all elements that would be displayed in displayed in either If frames is None, uses actually displayed elements; otherwise, '
         ret = list()
         if frames is None:
-            for nx in range(box.x1, box.x2-1):
-                for ny in range(box.y1, box.y2-1):
+            for ny in range(box.y1, box.y2-1):
+                for nx in range(box.x1, box.x2-1):
                     for r in self._displayedRows[(nx,ny)][-(n or 0):]:
                         if r not in ret:
                             ret.append(r)
