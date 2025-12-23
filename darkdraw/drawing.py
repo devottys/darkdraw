@@ -1127,8 +1127,8 @@ Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
 Drawing.addCommand('gc', 'set-default-color-input', 'vd.default_color=input("set default color: ", value=vd.default_color)')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
-Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=sheet.cursorRows[0].color), cursorRows)')
-Drawing.addCommand('gzc', 'set-color-input-selected', 'set_color(input("color: ", value=sheet.cursorRows[0].color), selectedRows)')
+Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=vd.default_color), cursorRows)')
+Drawing.addCommand('gzc', 'set-color-input-selected', 'set_color(input("color: ", value=vd.default_color), sheet.selectedRows)')
 
 Drawing.addCommand('<', 'cycle-cursor-prev', 'cycle_color(cursorRows, -1)')
 Drawing.addCommand('>', 'cycle-cursor-next', 'cycle_color(cursorRows, 1)')
