@@ -351,26 +351,17 @@ class Drawing(TextCanvas):
         return any(f.id in r.frame.split() for f in frames)
 
     def moveToRow(self, rowstr):
-        self.refresh()
         a, b = map(int, rowstr.split())
         self.cursorBox.y1, self.cursorBox.y2 = a, b
         return True
 
     def moveToCol(self, colstr):
-        self.refresh()
         a, b = map(int, colstr.split())
         self.cursorBox.x1, self.cursorBox.x2 = a, b
         return True
 
     def itercursor(self, n=None, frames=None):
         return self.iterbox(self.cursorBox, n=n, frames=frames)
-
-    def refresh(self):
-        'Clear and redraw the existing screen.'
-        if not self._scr:
-            self._scr = mock.MagicMock(__bool__=mock.Mock(return_value=False))
-        self._scr.clear()
-        self.draw(self._scr)
 
     def autosave(self):
         try:
