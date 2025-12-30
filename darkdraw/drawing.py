@@ -563,12 +563,6 @@ class Drawing(TextCanvas):
 
         if go_forward:
             self.go_forward(dispwidth(text)+dx, 1+dy)
-        if self.cursorBox.x1 > self.windowWidth:
-            self.cursorBox.x1 = 1
-            self.cursorBox.y1 += 1
-        if self.cursorBox.y1 > self.windowHeight-1:
-            self.cursorBox.x1 += 1
-            self.cursorBox.y1 = 1
 
     def place_text_n(self, box, n):
         if self.paste_mode == "color":
