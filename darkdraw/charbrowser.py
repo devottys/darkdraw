@@ -1,6 +1,6 @@
 import unicodedata
 
-from visidata import *
+from visidata import vd, Sheet, VisiData, AttrDict, Column
 
 vd.option('ddw_max_unicode', 0x20000, 'maximum codepoint in unicode browser')
 
