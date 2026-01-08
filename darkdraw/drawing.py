@@ -1036,17 +1036,17 @@ DrawingSheet.class_options.null_value=''
 Drawing.tutorial_url='https://raw.githubusercontent.com/devottys/studio/master/darkdraw-tutorial.ddw'
 
 
-Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char')
-Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char')
-Drawing.addCommand(None, 'go-up',   'go_up()', 'go up one char')
-Drawing.addCommand(None, 'go-right', 'go_right()', 'go right one char in the palette')
-Drawing.addCommand(None, 'go-pagedown', 'go_pagedown(+1);', 'scroll one page forward in the palette')
-Drawing.addCommand(None, 'go-pageup', 'go_pagedown(-1)', 'scroll one page backward in the palette')
+Drawing.addCommand(None, 'go-left',  'go_left()', 'go left one char', replay=False)
+Drawing.addCommand(None, 'go-down',  'go_down()', 'go down one char', replay=False)
+Drawing.addCommand(None, 'go-up',   'go_up()', 'go up one char', replay=False)
+Drawing.addCommand(None, 'go-right', 'go_right()', 'go right one char in the palette', replay=False)
+Drawing.addCommand(None, 'go-pagedown', 'go_pagedown(+1);', 'scroll one page forward', replay=False)
+Drawing.addCommand(None, 'go-pageup', 'go_pagedown(-1)', 'scroll one page backward', replay=False)
 
-Drawing.addCommand(None, 'go-leftmost', 'go_leftmost()', 'go all the way to the left of the palette')
-Drawing.addCommand(None, 'go-top', 'go_top()', 'go all the way to the top of the palette')
-Drawing.addCommand(None, 'go-bottom', 'go_bottom()', 'go all the way to the bottom ')
-Drawing.addCommand(None, 'go-rightmost', 'go_rightmost()', 'go all the way to the right')
+Drawing.addCommand(None, 'go-leftmost', 'go_leftmost()', 'go all the way to the left', replay=False)
+Drawing.addCommand(None, 'go-top', 'go_top()', 'go all the way to the top', replay=False)
+Drawing.addCommand(None, 'go-bottom', 'go_bottom()', 'go all the way to the bottom', replay=False)
+Drawing.addCommand(None, 'go-rightmost', 'go_rightmost()', 'go all the way to the right', replay=False)
 
 Drawing.addCommand('', 'pen-left', 'sheet.pendir="l"', '')
 Drawing.addCommand('', 'pen-down', 'sheet.pendir="d"', '')
