@@ -2,6 +2,9 @@ import unicodedata
 
 from visidata import *
 
+vd.option('ddw_max_unicode', 0x20000, 'maximum codepoint in unicode browser')
+
+
 enumvalues = {
   'category': {
     'Lu': 'Letter, uppercase',
@@ -110,4 +113,4 @@ class UnicodeBrowser(Sheet):
 
 @VisiData.lazy_property
 def unibrowser(vd):
-    return UnicodeBrowser('unicode_chars', rows=[AttrDict(text=chr(i)) for i in range(32, 0x10000) if unicodedata.category(chr(i))[0] not in 'CM'])
+    return UnicodeBrowser('unicode_chars', rows=[AttrDict(text=chr(i)) for i in range(32, vd.options.ddw_max_unicode) if unicodedata.category(chr(i))[0] not in 'CM'])
