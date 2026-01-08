@@ -1185,64 +1185,38 @@ Drawing.addCommand('w', 'line-drawing-mode', 'set_linedraw_mode()', '')
 Drawing.addCommand('BUTTON1_PRESSED', 'click-cursor', 'click(mouseX, mouseY)', 'start cursor box with left mouse button press')
 Drawing.addCommand('BUTTON1_RELEASED', 'end-cursor', 'release(mouseX, mouseY)', 'end cursor box with left mouse button release')
 
-
-vd.addMenuItem('File', 'New drawing', 'new-drawing')
-vd.addMenuItem('View', 'Unicode browser', 'open-unicode')
-vd.addMenuItem('View', 'Drawing table', 'open-drawing')
-vd.addMenuItem('Help', 'DarkDraw tutorial', 'open-tutorial-darkdraw')
-vd.addMenuItem('Edit', 'Add text', 'add-input')
-
-vd.addMenu(Menu('DarkDraw',
-    Menu('New drawing', 'new-drawing'),
-    Menu('View',
-        Menu('Colors sheet', 'open-colors'),
-        Menu('Unicode characters', 'open-unicode'),
-        Menu('Backing table', 'open-backing'),
-        Menu('Frames sheet', 'open-frames'),
-    ),
-    Menu('Cycle paste mode', 'cycle-paste-mode'),
-    Menu('Flip cursor',
-        Menu('horizontally', 'flip-cursor-horiz'),
-        Menu('vertically', 'flip-cursor-vert'),
-    ),
-    Menu('Animation',
-        Menu('New frame',
-            Menu('before', 'new-frame-before'),
-            Menu('after', 'new-frame-after'),
-        ),
-        Menu('Go to frame',
-            Menu('first', 'first-frame'),
-            Menu('last', 'last-frame'),
-            Menu('prev', 'prev-frame'),
-            Menu('next', 'next-frame'),
-        ),
-        Menu('Start', 'reset-time'),
-    ),
-    Menu('Color',
-        Menu('Set default from cursor', 'set-default-cursor'),
-        Menu('Set to input', 'set-color-input'),
-        Menu('Cycle',
-            Menu('cursor',
-                Menu('down', 'cycle-cursor-prev'),
-                Menu('up', 'cycle-cursor-next'),
-            ),
-            Menu('selected',
-                Menu('down', 'color-selected-next'),
-                Menu('up', 'color-selected-prev'),
-            ),
-            Menu('top of cursor',
-                Menu('down', 'cycle-topcursor-next'),
-                Menu('up', 'cycle-topcursor-prev'),
-            ),
-        ),
-        Menu('Tag',
-            Menu('selected', 'tag-selected'),
-            Menu('under cursor', 'tag-cursor'),
-            Menu('top of cursor', 'tag-topcursor'),
-        ),
-        Menu('Insert',
-            Menu('Line', 'insert-row'),
-            Menu('Character', 'insert-col'),
-        ),
-    ),
-))
+vd.addMenuItems('''
+    File > New drawing > new-drawing
+    View > Unicode browser > open-unicode
+    View > Drawing table > open-drawing
+    Help > DarkDraw tutorial > open-tutorial-darkdraw
+    Edit > Add text > add-input
+    DarkDraw > New drawing > new-drawing
+    DarkDraw > View > Colors sheet > open-colors
+    DarkDraw > View > Unicode characters > open-unicode
+    DarkDraw > View > Backing table > open-backing
+    DarkDraw > View > Frames sheet > open-frames
+    DarkDraw > Cycle paste mode > cycle-paste-mode
+    DarkDraw > Flip cursor > horizontally > flip-cursor-horiz
+    DarkDraw > Flip cursor > vertically > flip-cursor-vert
+    DarkDraw > Animation > New frame > before > new-frame-before
+    DarkDraw > Animation > New frame > after > new-frame-after
+    DarkDraw > Animation > Go to frame > first > first-frame
+    DarkDraw > Animation > Go to frame > last > last-frame
+    DarkDraw > Animation > Go to frame > prev > prev-frame
+    DarkDraw > Animation > Go to frame > next > next-frame
+    DarkDraw > Animation > Start > reset-time
+    DarkDraw > Color > Set default from cursor > set-default-cursor
+    DarkDraw > Color > Set to input > set-color-input
+    DarkDraw > Color > Cycle > cursor > down > cycle-cursor-next
+    DarkDraw > Color > Cycle > cursor > up > cycle-cursor-prev
+    DarkDraw > Color > Cycle > selected > down > color-selected-next
+    DarkDraw > Color > Cycle > selected > up > color-selected-prev
+    DarkDraw > Color > Cycle > top of cursor > down > cycle-topcursor-next
+    DarkDraw > Color > Cycle > top of cursor > up > cycle-topcursor-prev
+    DarkDraw > Tag > selected > tag-selected
+    DarkDraw > Tag > under cursor > tag-cursor
+    DarkDraw > Tag > top of cursor > tag-topcursor
+    DarkDraw > Insert > Line > insert-row
+    DarkDraw > Insert > Character > insert-col
+''')
