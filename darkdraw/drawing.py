@@ -989,10 +989,21 @@ def draw_line(self, objlist, x0, y0, x1, y1):
 
 
 @Drawing.api
-def qcurve(self, vertexes, objrows):
-        x1, y1 = vertexes[0]
-        x2, y2 = vertexes[1]
-        x3, y3 = vertexes[2]
+def split_rows(sheet, rows):
+    vd.addUndo(setattr, sheet.source, 'rows', copy(sheet.source.rows))
+
+    for row in rows:
+        i = sheet.source.rows.index(row)
+        newrows = []
+        dx = 0
+        for ch in row.text:
+            newr = copy(row)
+            newr.text = ch
+            newr.x += dx
+            dx += dispwidth(ch)
+            newrows.append(newr)
+
+        sheet.source.rows[i:i+1] = newrows
 
 
 @Drawing.command('', 'box-cursor', 'draw a box to fill the inner edge of the cursor')
@@ -1106,7 +1117,8 @@ Drawing.addCommand('Ctrl+G', 'show-char', 'status(f"{sheet.cursorBox} <{cursorDe
 DrawingSheet.addCommand('Enter', 'dive-group', 'cursorRow.rows or fail("no elements in group"); vd.push(DrawingSheet(source=sheet, rows=cursorRow.rows))')
 DrawingSheet.addCommand('gEnter', 'dive-selected', 'ret=sum(((r.rows or []) for r in selectedRows), []) or fail("no groups"); vd.push(DrawingSheet(source=sheet, rows=ret))')
 Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join selected objects into one text object')
-
+Drawing.addCommand('/', 'split-cursor', 'split_rows(list(itercursor()))', 'split strings at cursor into multiple objects, one object per character')
+Drawing.addCommand('g/', 'split-selected', 'split_rows(selectedRows)', 'split selected strings into multiple objects, one object per character')
 
 Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
 Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
