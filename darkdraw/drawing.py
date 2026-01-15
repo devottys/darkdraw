@@ -333,6 +333,11 @@ class Drawing(TextCanvas):
             return super().__getattr__(k)
         return getattr(self.source, k)
 
+    @drawcache_property
+    def selectedBox(self):
+        x1, y1, x2, y2 = boundingBox(self.selectedRows)
+        return CharBox(None, x1, y1, x2-x1, y2-y1)
+
     @property
     def currentFrame(self):
         if self.frames and 0 <= self.cursorFrameIndex < self.nFrames:
@@ -858,21 +863,6 @@ def input_canvas(sheet, box, row=None):
 
 
 @Drawing.api
-def flip_horiz(sheet, box):
-    for r in sheet.iterbox(box):
-        oldx = copy(r.x)
-        r.x = box.x2+box.x1-r.x-2
-        vd.addUndo(setattr, r, 'x', oldx)
-
-
-@Drawing.api
-def flip_vert(sheet, box):
-    for r in sheet.iterbox(box):
-        oldy = r.y
-        r.y = box.y2+box.y1-r.y-2
-        vd.addUndo(setattr, r, 'y', oldy)
-
-@Drawing.api
 def cycle_color(sheet, rows, n=1):
     for r in rows:
        clist = []
@@ -1120,8 +1110,6 @@ Drawing.addCommand('&', 'join-selected', 'join_rows(source.selectedRows)', 'join
 Drawing.addCommand('/', 'split-cursor', 'split_rows(list(itercursor()))', 'split strings at cursor into multiple objects, one object per character')
 Drawing.addCommand('g/', 'split-selected', 'split_rows(source.selectedRows)', 'split selected strings into multiple objects, one object per character')
 
-Drawing.addCommand('', 'flip-cursor-horiz', 'flip_horiz(sheet.cursorBox)', 'Flip elements under cursor horizontally')
-Drawing.addCommand('', 'flip-cursor-vert', 'flip_vert(sheet.cursorBox)', 'Flip elements under cursor vertically')
 Drawing.addCommand('gc', 'set-default-color-input', 'vd.default_color=input("set default color: ", value=vd.default_color)')
 Drawing.addCommand('c', 'set-default-color', 'vd.default_color=list(itercursor())[-1].color')
 Drawing.addCommand('zc', 'set-color-input', 'set_color(input("color: ", value=vd.default_color), cursorRows)')
@@ -1197,8 +1185,6 @@ vd.addMenuItems('''
     DarkDraw > View > Backing table > open-backing
     DarkDraw > View > Frames sheet > open-frames
     DarkDraw > Cycle paste mode > cycle-paste-mode
-    DarkDraw > Flip cursor > horizontally > flip-cursor-horiz
-    DarkDraw > Flip cursor > vertically > flip-cursor-vert
     DarkDraw > Animation > New frame > before > new-frame-before
     DarkDraw > Animation > New frame > after > new-frame-after
     DarkDraw > Animation > Go to frame > first > first-frame
