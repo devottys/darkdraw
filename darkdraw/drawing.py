@@ -95,16 +95,6 @@ class DrawingSheet(JsonSheet):
     def newRow(self):
         return AttrDict(x=None, y=None, text='', color='', tags=[], group='')
 
-    @property
-    def minXY(self) -> int:
-        minX, minY, maxX, maxY = boundingBox(self.rows)
-        return minX, minY
-
-    @property
-    def maxXY(self) -> int:
-        minX, minY, maxX, maxY = boundingBox(self.rows)
-        return maxX, maxY
-
     @functools.cached_property
     def drawing(self):
         return Drawing(self.name+".ddw", source=self)
