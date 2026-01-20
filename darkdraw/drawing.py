@@ -100,6 +100,7 @@ class DrawingSheet(JsonSheet):
         return Drawing(self.name+".ddw", source=self)
 
     def addRow(self, row, **kwargs):
+        assert not any(row is r for r in self.rows), 'duplicate row reference'  #61: remove when fixed
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
         self.setModified()
