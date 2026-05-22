@@ -3,3 +3,4 @@ tags
 build/
 *.egg-info/
 wip/
+.meta
