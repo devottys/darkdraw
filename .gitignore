@@ -1,2 +1,5 @@
 __pycache__
 tags
+build/
+*.egg-info/
+wip/
