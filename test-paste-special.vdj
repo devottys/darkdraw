@@ -1,0 +1,7 @@
+{"longname": "open-file", "input": "samples/arrows.ddw", "keystrokes": "o"}
+{"longname": "open-file", "input": "samples/colors.ddw", "keystrokes": "o"}
+{"sheet": "colors", "col": "15 31", "row": "8 16", "longname": "select-cursor", "input": "", "keystrokes": "s", "comment": ""}
+{"sheet": "colors", "col": "", "row": "", "longname": "yank-selected", "input": "", "keystrokes": "gy", "comment": ""}
+{"sheet": "arrows", "col": "", "row": "", "longname": "cycle-paste-mode", "input": "", "keystrokes": ";", "comment": ""}
+{"sheet": "arrows", "col": "", "row": "", "longname": "cycle-paste-mode", "input": "", "keystrokes": ";", "comment": ""}
+{"sheet": "arrows", "col": "", "row": "", "longname": "paste-special", "input": "", "keystrokes": "zp", "comment": ""}
