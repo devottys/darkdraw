@@ -6,6 +6,7 @@ from .upgrade import *
 
 from .ansihtml import * # save to .ansihtml
 from .save import *
+from .load_ans import *
 from .save_ans import *
 from .load_dur import *
 from .boxdraw import *

@@ -763,6 +763,15 @@ def set_color(self, color, rows):
         vd.addUndo(setattr, r, 'color', oldcolor)
 
 @Drawing.api
+def generate_sauce(sheet):
+    from .ansi import default_sauce_rows
+    maxX, maxY = sheet.maxXY
+    sheet.source.deleteBy(lambda r: (r.get('frame') or '') == 'SAUCE_record')
+    for i, r in enumerate(default_sauce_rows(maxX, maxY)):
+        sheet.source.addRow(AttrDict(r), index=i)
+    vd.status(f'SAUCE record generated ({maxX+1}x{maxY+1})')
+
+@Drawing.api
 def select_top(sheet, box):
     r = []
     for x in range(box.x1, box.x2-1):
@@ -934,6 +943,7 @@ Drawing.bindkey('C', 'open-colors')
 Drawing.unbindkey('Ctrl+R')
 
 BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
+Drawing.addCommand(None, 'generate-sauce', 'sheet.generate_sauce()', 'generate SAUCE metadata rows for current drawing')
 
 vd.addMenuItems('''
     File > New drawing > new-drawing
