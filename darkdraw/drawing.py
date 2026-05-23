@@ -474,11 +474,12 @@ class Drawing(TextCanvas):
             self.set_color(vd.current_charset[n].color, self.cursorRows)
             return
 
-        color = None
-        if self.paste_mode != "char":
-            color = vd.current_charset[n].color
-
-        self.place_text(vd.current_charset[n].text, box, color=color)
+        text = vd.current_charset[n].text
+        if self.paste_mode == "char":
+            self.place_text(text, box)
+        else:  # 'all' - preserve source color even when empty (do not coerce to default_color)
+            self.add_text(text, box.x1, box.y1, vd.current_charset[n].color)
+            self.go_forward(dispwidth(text), 1)
 
     def edit_text(self, text, row):
         if row is None:
