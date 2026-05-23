@@ -33,7 +33,15 @@ def open_ddw(vd, p):
 
 vd.new_ddw = vd.open_ddw
 
-vd.save_ddw = vd.save_jsonl
+@VisiData.api
+def save_ddw(vd, p, *vsheets):
+    # like save_jsonl but never emit explicit nulls; .ddw columns are fixed in DrawingSheet
+    with p.open(mode='w', encoding=vsheets[0].options.save_encoding) as fp:
+        if len(vsheets) > 1:
+            vd.warning('ddw cannot save multiple sheets; concatenating all rows')
+        for vs in vsheets:
+            for row in vs.iterrows('saving'):
+                fp.write(vd.encode_json(row, vs.visibleCols) + '\n')
 
 @VisiData.lazy_property
 def words(vd):
@@ -56,6 +64,11 @@ def any_match(G1, G2):
     if G1 and G2:
         for g in G1:
             if g in G2: return True
+
+def _parse_tags(tags):
+    if isinstance(tags, list):
+        return tags
+    return (tags or '').split()
 
 class DrawingSheet(JsonSheet):
     rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags='', .frame, .id, .rows=[] }
@@ -89,7 +102,7 @@ class DrawingSheet(JsonSheet):
         return Drawing(self.name+".ddw", source=self)
 
     def addRow(self, row, **kwargs):
-        # back-compat: legacy .ddw files stored tags as a JSON list; normalize to space-separated string
+        # back-compat: legacy .ddw stored tags as a JSON list
         if isinstance(row.get('tags'), list):
             row['tags'] = ' '.join(row['tags'])
         assert not any(row is r for r in self.rows), 'duplicate row reference'  #61: remove when fixed
@@ -116,14 +129,13 @@ class DrawingSheet(JsonSheet):
     def untag_rows(self, rows, s):
         col = self.column('tags')
         for row in Progress(rows):
-            v = col.getValue(row) or ''
-            tags = [x for x in v.split() if x != s]
+            tags = [x for x in _parse_tags(col.getValue(row)) if x != s]
             col.setValue(row, ' '.join(tags))
 
     def tag_rows(self, rows, tagstr):
         newtags = tagstr.split()
         for r in rows:
-            existing = (r.tags or '').split()
+            existing = _parse_tags(r.tags)
             for tag in newtags:
                 if tag not in existing:
                     existing.append(tag)
@@ -214,7 +226,7 @@ class DrawingSheet(JsonSheet):
         return degrouped
 
     def gatherTag(self, gname):
-        return list(r for r in self.rows if gname in (r.get('tags') or '').split())
+        return list(r for r in self.rows if gname in _parse_tags(r.get('tags')))
 
     def slide_top(self, rows, index=0):
         'Move selected rows to top of sheet (bottom of drawing)'
@@ -346,7 +358,7 @@ class Drawing(TextCanvas):
             sy = y - self.yoffset
             sx = x - self.xoffset
             toprow = parents[0]
-            rtags = (r.tags or '').split()
+            rtags = _parse_tags(r.tags)
             for g in rtags:
                 self._tags[g].append(r)
 
@@ -713,10 +725,10 @@ class Drawing(TextCanvas):
                 vd.status('ignoring %s type row' % r.type)
 
     def select_tag(self, tag):
-        self.select(list(r for r in self.source.rows if tag in (r.tags or '').split()))
+        self.select(list(r for r in self.source.rows if tag in _parse_tags(r.tags)))
 
     def unselect_tag(self, tag):
-        self.unselect(list(r for r in self.rows if tag in (r.tags or '').split()))
+        self.unselect(list(r for r in self.rows if tag in _parse_tags(r.tags)))
 
     def align_selected(self, attrname):
         rows = self.someSelectedRows

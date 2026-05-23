@@ -191,7 +191,7 @@ class SauceRecord:
         return [
             {
                 "type": label, "x": 0, "y": y, "text": text,
-                "color": "", "tags": [], "group": "",
+                "color": "", "tags": "", "group": "",
                 "frame": "SAUCE_record", "id": "", "rows": []
             }
             for y, (text, label) in enumerate((text, label) for text, label in fields if text)
@@ -218,7 +218,7 @@ def default_sauce_rows(maxX: int, maxY: int) -> List[dict]:
     # Insert a whitespace Flags row (sauce_to_rows only emits Flags when t_flags truthy)
     flags_row = {
         "type": "Flags", "x": 0, "y": 0, "text": " ",
-        "color": "", "tags": [], "group": "",
+        "color": "", "tags": "", "group": "",
         "frame": "SAUCE_record", "id": "", "rows": []
     }
     # Place Flags after Font (matches sauce_to_rows ordering: Title,Author,Group,Date,Dimensions,Flags,Font,Comments)
@@ -325,7 +325,7 @@ class AnsiChar:
         return {
             "type": "", "x": self.column, "y": self.row,
             "text": self.character, "color": " ".join(attrs),
-            "tags": [], "group": "", "frame": frame_id or "", "id": "", "rows": []
+            "tags": "", "group": "", "frame": frame_id or "", "id": "", "rows": []
         }
 
 # ── ANSI parser ──────────────────────────────────────────────────────────────
