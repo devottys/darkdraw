@@ -58,7 +58,7 @@ def any_match(G1, G2):
             if g in G2: return True
 
 class DrawingSheet(JsonSheet):
-    rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags=[], .frame, .id, .rows=[] }
+    rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags='', .frame, .id, .rows=[] }
     columns=[
         ItemColumn('id', type=str),
         ItemColumn('type'),
@@ -69,7 +69,7 @@ class DrawingSheet(JsonSheet):
         ItemColumn('color', type=str), # for text
 
         # for all objects
-        ItemColumn('tags'),  # for all objs
+        ItemColumn('tags', type=str),  # space-separated tag names
         ItemColumn('group'), # "
         ItemColumn('frame', type=str), # "
 
@@ -82,13 +82,16 @@ class DrawingSheet(JsonSheet):
         CellColorizer(3, None, lambda s,c,r,v: r and c and c.name == 'text' and r.color)
     ]
     def newRow(self):
-        return AttrDict(x=None, y=None, text='', color='', tags=[], group='')
+        return AttrDict(x=None, y=None, text='', color='', tags='', group='')
 
     @functools.cached_property
     def drawing(self):
         return Drawing(self.name+".ddw", source=self)
 
     def addRow(self, row, **kwargs):
+        # back-compat: legacy .ddw files stored tags as a JSON list; normalize to space-separated string
+        if isinstance(row.get('tags'), list):
+            row['tags'] = ' '.join(row['tags'])
         assert not any(row is r for r in self.rows), 'duplicate row reference'  #61: remove when fixed
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
@@ -113,18 +116,18 @@ class DrawingSheet(JsonSheet):
     def untag_rows(self, rows, s):
         col = self.column('tags')
         for row in Progress(rows):
-            v = col.getValue(row)
-            assert isinstance(v, (list, tuple)), type(r).__name__
-            v = [x for x in v if x != s]
-            col.setValue(row, v)
+            v = col.getValue(row) or ''
+            tags = [x for x in v.split() if x != s]
+            col.setValue(row, ' '.join(tags))
 
     def tag_rows(self, rows, tagstr):
-        tags = tagstr.split()
+        newtags = tagstr.split()
         for r in rows:
-            if not r.tags: r.tags = []
-            for tag in tags:
-                if tag not in r.tags:
-                    r.tags.append(tag)
+            existing = (r.tags or '').split()
+            for tag in newtags:
+                if tag not in existing:
+                    existing.append(tag)
+            r.tags = ' '.join(existing)
 
     @property
     def groups(self):
@@ -211,7 +214,7 @@ class DrawingSheet(JsonSheet):
         return degrouped
 
     def gatherTag(self, gname):
-        return list(r for r in self.rows if gname in r.get('tags', ''))
+        return list(r for r in self.rows if gname in (r.get('tags') or '').split())
 
     def slide_top(self, rows, index=0):
         'Move selected rows to top of sheet (bottom of drawing)'
@@ -343,11 +346,12 @@ class Drawing(TextCanvas):
             sy = y - self.yoffset
             sx = x - self.xoffset
             toprow = parents[0]
-            for g in (r.tags or []):
+            rtags = (r.tags or '').split()
+            for g in rtags:
                 self._tags[g].append(r)
 
             if not r.text: continue
-            if any_match(r.tags, self.disabled_tags): continue
+            if any_match(rtags, self.disabled_tags): continue
             if toprow.frame or r.frame:
                 if not self.inFrame(r, [thisframe]): continue
 
@@ -356,7 +360,7 @@ class Drawing(TextCanvas):
                 c = self.options.color_current_row + ' ' + str(c)
             if self.source.isSelected(toprow):
                 c = self.options.color_selected_row + ' ' + str(c)
-                if r.tags: selectedGroups |= set(r.tags)
+                if rtags: selectedGroups |= set(rtags)
             a = colors[c]
 
             if (0 <= sy < self.windowHeight-2 and 0 <= sx < self.windowWidth):  # inside screen
@@ -709,10 +713,10 @@ class Drawing(TextCanvas):
                 vd.status('ignoring %s type row' % r.type)
 
     def select_tag(self, tag):
-        self.select(list(r for r in self.source.rows if tag in (r.tags or '')))
+        self.select(list(r for r in self.source.rows if tag in (r.tags or '').split()))
 
     def unselect_tag(self, tag):
-        self.unselect(list(r for r in self.rows if tag in (r.tags or '')))
+        self.unselect(list(r for r in self.rows if tag in (r.tags or '').split()))
 
     def align_selected(self, attrname):
         rows = self.someSelectedRows
@@ -746,7 +750,7 @@ def input_canvas(sheet, box, row=None):
 def cycle_color(sheet, rows, n=1):
     for r in rows:
        clist = []
-       for c in r.color.split():
+       for c in (r.color or '').split():
            try:
                 c = str((int(c)+n) % 256)
            except Exception:
