@@ -706,7 +706,9 @@ class Drawing(TextCanvas):
                 if oldr.color and newx < box.x2 and newy < box.y2-1:
                     for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                         npasted += 1
+                        oldcolor = existing.color
                         existing.color = oldr.color
+                        vd.addUndo(setattr, existing, 'color', oldcolor)
 
         if npasted == 0:
             vd.warning(f'paste mode {self.paste_mode} had nothing to paste')
