@@ -94,6 +94,14 @@ class DrawingSheet(JsonSheet):
     colorizers = [
         CellColorizer(3, None, lambda s,c,r,v: r and c and c.name == 'text' and r.color)
     ]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.autosaved = True
+
+    def setModified(self):
+        super().setModified()
+        self.autosaved = False
+
     def newRow(self):
         return AttrDict(x=None, y=None, text='', color='', tags='', group='')
 
@@ -308,10 +316,12 @@ class Drawing(TextCanvas):
             now = time.time()
             autosave_interval_s = self.options.autosave_interval_s
             if autosave_interval_s and now-self.last_autosave > autosave_interval_s:
-                p = Path(options.autosave_path)
-                if not p.exists():
-                    os.makedirs(p)
-                vd.saveSheets(p/time.strftime(self.name+'-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self, confirm_overwrite=False)
+                if not self.source.autosaved:
+                    p = Path(options.autosave_path)
+                    if not p.exists():
+                        os.makedirs(p)
+                    vd.saveSheets(p/time.strftime(self.name+'-%Y%m%dT%H%M%S.ddw', time.localtime(now)), self, confirm_overwrite=False)
+                    self.source.autosaved = True
                 self.last_autosave = now
         except Exception as e:
             vd.exceptionCaught(e)
@@ -441,6 +451,7 @@ class Drawing(TextCanvas):
     def reload(self):
         self.source.ensureLoaded()
         vd.sync()
+        self.source.autosaved = True
         if self._scr:
             self.draw(self._scr)
 
@@ -822,7 +833,7 @@ Drawing.init('disabled_tags', set)  # set of groupnames which should not be draw
 
 Drawing.init('mark', lambda: (0,0))
 Drawing.init('paste_mode', lambda: 'all')
-Drawing.init('last_autosave', int)
+Drawing.init('last_autosave', time.time)
 
 # (xoffset, yoffset) is absolute coordinate of upper left of viewport (0, 0)
 Drawing.init('yoffset', int)
