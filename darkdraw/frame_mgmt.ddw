@@ -1,0 +1,77 @@
+{"id": "0", "type": "frame", "x": null, "y": null, "text": "", "color": "", "tags": "", "group": "", "frame": null, "rows": null, "duration_ms": 100, "ref": null}
+{"id": "1", "type": "frame", "text": "", "color": "", "tags": "", "group": "", "duration_ms": 100}
+{"id": "2", "type": "frame", "text": "", "color": "", "tags": "", "group": "", "duration_ms": 100}
+{"id": "3", "type": "frame", "text": "", "color": "", "tags": "", "group": "", "duration_ms": 100}
+{"id": "4", "type": "frame", "text": "", "color": "", "tags": "", "group": "", "duration_ms": 100}
+{"id": "5", "type": "frame", "text": "", "color": "", "tags": "", "group": "", "duration_ms": 100}
+{"x": 3, "y": 1, "text": "frame_mgmt.py", "color": "14", "tags": "titles", "group": "", "frame": ""}
+{"x": 33, "y": 3, "text": "Frame ID Linking", "color": "13", "tags": "titles", "group": "", "frame": "0"}
+{"x": 3, "y": 5, "text": "In the backing sheet, changes to a frame's id will automatically propagate", "color": "", "tags": "body", "group": "", "frame": "0"}
+{"x": 3, "y": 6, "text": "to all instances of it in the frame column. Create a second pane (Z), and", "color": "", "tags": "body", "group": "", "frame": "0"}
+{"x": 3, "y": 7, "text": "open the backing sheet there (`). Edit the id of frame 0 (e), type HERE,", "color": "", "tags": "body", "group": "", "frame": "0"}
+{"x": 3, "y": 8, "text": "and confirm (Enter). Note that HERE now appears in the frame column of", "color": "", "tags": "body", "group": "", "frame": "0"}
+{"x": 3, "y": 9, "text": "text items that previously contained 0. Edits to the frame column do NOT,", "color": "", "tags": "body", "group": "", "frame": "0"}
+{"x": 3, "y": 10, "text": "likewise, propagate to the respective frame's id.", "color": "", "tags": "body", "group": "", "frame": "0"}
+{"x": 69, "y": 6, "text": "Z", "color": "11", "tags": "inputs", "group": "", "frame": "0"}
+{"x": 33, "y": 7, "text": "`", "color": "11", "tags": "inputs", "group": "", "frame": "0"}
+{"x": 61, "y": 7, "text": "e", "color": "11", "tags": "inputs", "group": "", "frame": "0"}
+{"x": 16, "y": 8, "text": "Enter", "color": "11", "tags": "inputs", "group": "", "frame": "0"}
+{"x": 70, "y": 7, "text": "HERE", "color": "12", "tags": "values", "group": "", "frame": "0"}
+{"x": 40, "y": 9, "text": "0", "color": "12", "tags": "values", "group": "", "frame": "0"}
+{"x": 34, "y": 8, "text": "HERE", "color": "12", "tags": "values", "group": "", "frame": "0"}
+{"x": 31, "y": 14, "text": "to duplicate-frame ]", "color": "10", "tags": "next", "group": "", "frame": "0"}
+{"x": 30, "y": 3, "text": "duplicate-frame", "color": "13", "tags": "titles", "group": "", "frame": "1"}
+{"x": 3, "y": 5, "text": "In the canvas, press gz] to create a copy of the current frame.", "color": "", "tags": "body", "group": "", "frame": "1"}
+{"x": 3, "y": 6, "text": "(gz[ would also work, but later steps in this tutorial assume that you", "color": "", "tags": "body", "group": "", "frame": "1"}
+{"x": 3, "y": 7, "text": "will have pressed gz] here.) There should now be a frame called 1-2", "color": "", "tags": "body", "group": "", "frame": "1"}
+{"x": 4, "y": 6, "text": "gz[", "color": "11", "tags": "inputs", "group": "", "frame": "1"}
+{"x": 21, "y": 7, "text": "gz]", "color": "11", "tags": "inputs", "group": "", "frame": "1"}
+{"x": 24, "y": 5, "text": "gz]", "color": "11", "tags": "inputs", "group": "", "frame": "1"}
+{"x": 27, "y": 14, "text": "to deduplicate-text ]", "color": "10", "tags": "next", "group": "", "frame": "1"}
+{"x": 3, "y": 8, "text": "tween frames 1 and 2, and every item from frame 1 should have a copy", "color": "", "tags": "body", "group": "", "frame": "1"}
+{"x": 3, "y": 9, "text": "on frame 1-2.", "color": "", "tags": "body", "group": "", "frame": "1"}
+{"x": 12, "y": 9, "text": "1-2", "color": "12", "tags": "values", "group": "", "frame": "1"}
+{"x": 67, "y": 7, "text": "1-2", "color": "12", "tags": "values", "group": "", "frame": "1"}
+{"x": 16, "y": 8, "text": "1", "color": "12", "tags": "values", "group": "", "frame": "1"}
+{"x": 22, "y": 8, "text": "2", "color": "12", "tags": "values", "group": "", "frame": "1"}
+{"x": 51, "y": 8, "text": "1", "color": "12", "tags": "values", "group": "", "frame": "1"}
+{"x": 33, "y": 3, "text": "deduplicate-text", "color": "13", "tags": "titles", "group": "", "frame": "2"}
+{"x": 3, "y": 6, "text": "Press Space, and enter command longname deduplicate-text.", "color": "", "tags": "body", "group": "", "frame": "2"}
+{"x": 3, "y": 7, "text": "The duplicated items from frames 1 and 1-2 have been combined", "color": "", "tags": "body", "group": "", "frame": "2"}
+{"x": 3, "y": 8, "text": "into single items with both frames listed in the frame column.", "color": "", "tags": "body", "group": "", "frame": "2"}
+{"x": 3, "y": 5, "text": "Identical objects on multiple frames can be combined to declutter the backing sheet.", "color": "", "tags": "body", "group": "", "frame": "2"}
+{"x": 9, "y": 6, "text": "Space", "color": "11", "tags": "inputs", "group": "", "frame": "2"}
+{"x": 43, "y": 6, "text": "deduplicate-text", "color": "11", "tags": "inputs", "group": "", "frame": "2"}
+{"x": 30, "y": 14, "text": "to self-contain-frames ]", "color": "10", "tags": "next", "group": "", "frame": "2"}
+{"x": 36, "y": 7, "text": "1", "color": "12", "tags": "values", "group": "", "frame": "2"}
+{"x": 42, "y": 7, "text": "1-2", "color": "12", "tags": "values", "group": "", "frame": "2"}
+{"x": 26, "y": 3, "text": "self-contain-frames", "color": "13", "tags": "titles", "group": "", "frame": "3"}
+{"x": 3, "y": 5, "text": "The opposite can also be done, to prevent edits on a given frame", "color": "", "tags": "body", "group": "", "frame": "3"}
+{"x": 3, "y": 6, "text": "from affecting the contents of other frames.", "color": "", "tags": "body", "group": "", "frame": "3"}
+{"x": 3, "y": 7, "text": "Enter command longname self-contain-frames.", "color": "", "tags": "body", "group": "", "frame": "3"}
+{"x": 3, "y": 8, "text": "The multi-frame objects created from frames 1 and 1-2 have again", "color": "", "tags": "body", "group": "", "frame": "3"}
+{"x": 3, "y": 9, "text": "become separate single-frame objects", "color": "", "tags": "body", "group": "", "frame": "3"}
+{"x": 26, "y": 7, "text": "self-contain-frames", "color": "11", "tags": "inputs", "group": "", "frame": "3"}
+{"x": 23, "y": 14, "text": "to deduplicate-frames ]", "color": "10", "tags": "next", "group": "", "frame": "3"}
+{"x": 47, "y": 8, "text": "1", "color": "12", "tags": "values", "group": "", "frame": "3"}
+{"x": 53, "y": 8, "text": "1-2", "color": "12", "tags": "values", "group": "", "frame": "3"}
+{"x": 3, "y": 5, "text": "Identical frames can be simplified to multiple instances", "color": "", "tags": "body", "group": "", "frame": "4"}
+{"x": 3, "y": 6, "text": "of the same frame. Press Space, and enter command longname", "color": "", "tags": "body", "group": "", "frame": "4"}
+{"x": 3, "y": 7, "text": "deduplicate-frames. Frame 1-2 and its contents have been", "color": "", "tags": "body", "group": "", "frame": "4"}
+{"x": 3, "y": 8, "text": "removed from the backing sheet, and a second instance of", "color": "", "tags": "body", "group": "", "frame": "4"}
+{"x": 3, "y": 9, "text": "frame 1 now exists where frame 1-2 was previously.", "color": "", "tags": "body", "group": "", "frame": "4"}
+{"x": 22, "y": 14, "text": "to prune-unused ]", "color": "10", "tags": "next", "group": "", "frame": "4"}
+{"x": 21, "y": 3, "text": "deduplicate-frames", "color": "13", "tags": "titles", "group": "", "frame": "4"}
+{"x": 3, "y": 7, "text": "deduplicate-frames", "color": "11", "tags": "inputs", "group": "", "frame": "4"}
+{"x": 29, "y": 7, "text": "1-2", "color": "12", "tags": "values", "group": "", "frame": "4"}
+{"x": 34, "y": 9, "text": "1-2", "color": "12", "tags": "values", "group": "", "frame": "4"}
+{"x": 9, "y": 9, "text": "1", "color": "12", "tags": "values", "group": "", "frame": "4"}
+{"x": 29, "y": 3, "text": "prune-unused", "color": "13", "tags": "titles", "group": "", "frame": "5"}
+{"x": 3, "y": 6, "text": "In the backing sheet, delete ONLY the frame object for frame HERE.", "color": "", "tags": "body", "group": "", "frame": "5"}
+{"x": 3, "y": 7, "text": "Then, enter command longname prune-unused.", "color": "", "tags": "body", "group": "", "frame": "5"}
+{"x": 3, "y": 8, "text": "The text objects from frame HERE have been pruned.", "color": "", "tags": "body", "group": "", "frame": "5"}
+{"x": 3, "y": 5, "text": "Objects that are unused by any frame can be removed, all at once.", "color": "", "tags": "body", "group": "", "frame": "5"}
+{"x": 32, "y": 7, "text": "prune-unused", "color": "11", "tags": "inputs", "group": "", "frame": "5"}
+{"x": 31, "y": 8, "text": "HERE", "color": "12", "tags": "values", "group": "", "frame": "5"}
+{"x": 64, "y": 6, "text": "HERE", "color": "12", "tags": "values", "group": "", "frame": "5"}
+{"x": 58, "y": 7, "text": "0", "color": "12", "tags": "values", "group": "", "frame": "0"}
