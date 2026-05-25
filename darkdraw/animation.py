@@ -39,9 +39,11 @@ def new_between_frame(sheet, fidx1, fidx2):
         if f1 and f2:
             name = str(f1.id)+'-'+str(f2.id)
         elif f1:
-            name = str(int(f1.id)+1)
+            try: name = str(int(f1.id)+1)
+            except ValueError: name = f'{f1.id}-post'
         elif f2:
-            name = str(int(f2.id)-1)
+            try: name = str(int(f2.id)-1)
+            except ValueError: name = f'{f2.id}-pre'
 
     newf = sheet.newRow()
     newf.type = 'frame'

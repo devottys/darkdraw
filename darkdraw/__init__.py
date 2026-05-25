@@ -12,6 +12,7 @@ from .load_dur import *
 from .boxdraw import *
 from .flip import *
 from .draw_ops import *
+from .frame_mgmt import *
 
 from .loader_scr import *  # deprecated 2020 format, remove anytime
 

@@ -70,10 +70,27 @@ def _parse_tags(tags):
         return tags
     return (tags or '').split()
 
+def _link_id_setter(col, row, val):
+    old = getattr(row, 'id', None)
+    if not (getattr(row, 'type', '') == 'frame' and old and old != val):
+        return
+    if any(r is not row and getattr(r, 'type', '') == 'frame' and getattr(r, 'id', None) == val for r in col.sheet.rows):
+        vd.warning(f'frame id {val!r} already exists; elements referencing {old!r} retargeted but two frame rows now share id {val!r}')
+    n = 0
+    for r in col.sheet.rows:
+        if r is row or getattr(r, 'type', '') or not getattr(r, 'frame', ''): continue
+        ids = r.frame.split()
+        if old not in ids: continue
+        vd.addUndo(setattr, r, 'frame', r.frame)
+        r.frame = ' '.join(val if x == old else x for x in ids)
+        n += 1
+    if n: vd.status(f'link_frame_ids: updated {n} element(s) {old!r} → {val!r}')
+
+
 class DrawingSheet(JsonSheet):
     rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags='', .frame, .id, .rows=[] }
     columns=[
-        ItemColumn('id', type=str),
+        ItemColumn('id', type=str, setter=_link_id_setter),
         ItemColumn('type'),
         ItemColumn('x', type=int),
         ItemColumn('y', type=int),
@@ -474,12 +491,11 @@ class Drawing(TextCanvas):
             self.set_color(vd.current_charset[n].color, self.cursorRows)
             return
 
-        text = vd.current_charset[n].text
-        if self.paste_mode == "char":
-            self.place_text(text, box)
-        else:  # 'all' - preserve source color even when empty (do not coerce to default_color)
-            self.add_text(text, box.x1, box.y1, vd.current_charset[n].color)
-            self.go_forward(dispwidth(text), 1)
+        color = None
+        if self.paste_mode != "char":
+            color = vd.current_charset[n].color
+
+        self.place_text(vd.current_charset[n].text, box, color=color)
 
     def edit_text(self, text, row):
         if row is None:
@@ -706,9 +722,7 @@ class Drawing(TextCanvas):
                 if oldr.color and newx < box.x2 and newy < box.y2-1:
                     for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                         npasted += 1
-                        oldcolor = existing.color
                         existing.color = oldr.color
-                        vd.addUndo(setattr, existing, 'color', oldcolor)
 
         if npasted == 0:
             vd.warning(f'paste mode {self.paste_mode} had nothing to paste')
