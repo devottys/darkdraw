@@ -33,7 +33,15 @@ def open_ddw(vd, p):
 
 vd.new_ddw = vd.open_ddw
 
-vd.save_ddw = vd.save_jsonl
+@VisiData.api
+def save_ddw(vd, p, *vsheets):
+    # like save_jsonl but never emit explicit nulls; .ddw columns are fixed in DrawingSheet
+    with p.open(mode='w', encoding=vsheets[0].options.save_encoding) as fp:
+        if len(vsheets) > 1:
+            vd.warning('ddw cannot save multiple sheets; concatenating all rows')
+        for vs in vsheets:
+            for row in vs.iterrows('saving'):
+                fp.write(vd.encode_json(row, vs.visibleCols) + '\n')
 
 @VisiData.lazy_property
 def words(vd):
@@ -57,8 +65,13 @@ def any_match(G1, G2):
         for g in G1:
             if g in G2: return True
 
+def _parse_tags(tags):
+    if isinstance(tags, list):
+        return tags
+    return (tags or '').split()
+
 class DrawingSheet(JsonSheet):
-    rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags=[], .frame, .id, .rows=[] }
+    rowtype='elements'  # rowdef: { .type, .x, .y, .text, .color, .group, .tags='', .frame, .id, .rows=[] }
     columns=[
         ItemColumn('id', type=str),
         ItemColumn('type'),
@@ -69,7 +82,7 @@ class DrawingSheet(JsonSheet):
         ItemColumn('color', type=str), # for text
 
         # for all objects
-        ItemColumn('tags'),  # for all objs
+        ItemColumn('tags', type=str),  # space-separated tag names
         ItemColumn('group'), # "
         ItemColumn('frame', type=str), # "
 
@@ -82,13 +95,16 @@ class DrawingSheet(JsonSheet):
         CellColorizer(3, None, lambda s,c,r,v: r and c and c.name == 'text' and r.color)
     ]
     def newRow(self):
-        return AttrDict(x=None, y=None, text='', color='', tags=[], group='')
+        return AttrDict(x=None, y=None, text='', color='', tags='', group='')
 
     @functools.cached_property
     def drawing(self):
         return Drawing(self.name+".ddw", source=self)
 
     def addRow(self, row, **kwargs):
+        # back-compat: legacy .ddw stored tags as a JSON list
+        if isinstance(row.get('tags'), list):
+            row['tags'] = ' '.join(row['tags'])
         assert not any(row is r for r in self.rows), 'duplicate row reference'  #61: remove when fixed
         row = super().addRow(row, **kwargs)
         vd.addUndo(self.rows.remove, row)
@@ -113,18 +129,17 @@ class DrawingSheet(JsonSheet):
     def untag_rows(self, rows, s):
         col = self.column('tags')
         for row in Progress(rows):
-            v = col.getValue(row)
-            assert isinstance(v, (list, tuple)), type(r).__name__
-            v = [x for x in v if x != s]
-            col.setValue(row, v)
+            tags = [x for x in _parse_tags(col.getValue(row)) if x != s]
+            col.setValue(row, ' '.join(tags))
 
     def tag_rows(self, rows, tagstr):
-        tags = tagstr.split()
+        newtags = tagstr.split()
         for r in rows:
-            if not r.tags: r.tags = []
-            for tag in tags:
-                if tag not in r.tags:
-                    r.tags.append(tag)
+            existing = _parse_tags(r.tags)
+            for tag in newtags:
+                if tag not in existing:
+                    existing.append(tag)
+            r.tags = ' '.join(existing)
 
     @property
     def groups(self):
@@ -211,7 +226,7 @@ class DrawingSheet(JsonSheet):
         return degrouped
 
     def gatherTag(self, gname):
-        return list(r for r in self.rows if gname in r.get('tags', ''))
+        return list(r for r in self.rows if gname in _parse_tags(r.get('tags')))
 
     def slide_top(self, rows, index=0):
         'Move selected rows to top of sheet (bottom of drawing)'
@@ -343,11 +358,12 @@ class Drawing(TextCanvas):
             sy = y - self.yoffset
             sx = x - self.xoffset
             toprow = parents[0]
-            for g in (r.tags or []):
+            rtags = _parse_tags(r.tags)
+            for g in rtags:
                 self._tags[g].append(r)
 
             if not r.text: continue
-            if any_match(r.tags, self.disabled_tags): continue
+            if any_match(rtags, self.disabled_tags): continue
             if toprow.frame or r.frame:
                 if not self.inFrame(r, [thisframe]): continue
 
@@ -356,7 +372,7 @@ class Drawing(TextCanvas):
                 c = self.options.color_current_row + ' ' + str(c)
             if self.source.isSelected(toprow):
                 c = self.options.color_selected_row + ' ' + str(c)
-                if r.tags: selectedGroups |= set(r.tags)
+                if rtags: selectedGroups |= set(rtags)
             a = colors[c]
 
             if (0 <= sy < self.windowHeight-2 and 0 <= sx < self.windowWidth):  # inside screen
@@ -458,11 +474,12 @@ class Drawing(TextCanvas):
             self.set_color(vd.current_charset[n].color, self.cursorRows)
             return
 
-        color = None
-        if self.paste_mode != "char":
-            color = vd.current_charset[n].color
-
-        self.place_text(vd.current_charset[n].text, box, color=color)
+        text = vd.current_charset[n].text
+        if self.paste_mode == "char":
+            self.place_text(text, box)
+        else:  # 'all' - preserve source color even when empty (do not coerce to default_color)
+            self.add_text(text, box.x1, box.y1, vd.current_charset[n].color)
+            self.go_forward(dispwidth(text), 1)
 
     def edit_text(self, text, row):
         if row is None:
@@ -689,7 +706,9 @@ class Drawing(TextCanvas):
                 if oldr.color and newx < box.x2 and newy < box.y2-1:
                     for existing in self._displayedRows[(newx, newy)][-(n or 0):]:
                         npasted += 1
+                        oldcolor = existing.color
                         existing.color = oldr.color
+                        vd.addUndo(setattr, existing, 'color', oldcolor)
 
         if npasted == 0:
             vd.warning(f'paste mode {self.paste_mode} had nothing to paste')
@@ -709,10 +728,10 @@ class Drawing(TextCanvas):
                 vd.status('ignoring %s type row' % r.type)
 
     def select_tag(self, tag):
-        self.select(list(r for r in self.source.rows if tag in (r.tags or '')))
+        self.select(list(r for r in self.source.rows if tag in _parse_tags(r.tags)))
 
     def unselect_tag(self, tag):
-        self.unselect(list(r for r in self.rows if tag in (r.tags or '')))
+        self.unselect(list(r for r in self.rows if tag in _parse_tags(r.tags)))
 
     def align_selected(self, attrname):
         rows = self.someSelectedRows
@@ -746,7 +765,7 @@ def input_canvas(sheet, box, row=None):
 def cycle_color(sheet, rows, n=1):
     for r in rows:
        clist = []
-       for c in r.color.split():
+       for c in (r.color or '').split():
            try:
                 c = str((int(c)+n) % 256)
            except Exception:
@@ -761,6 +780,15 @@ def set_color(self, color, rows):
         oldcolor = copy(r.color)
         r.color = color
         vd.addUndo(setattr, r, 'color', oldcolor)
+
+@Drawing.api
+def generate_sauce(sheet):
+    from .ansi import default_sauce_rows
+    maxX, maxY = sheet.maxXY
+    sheet.source.deleteBy(lambda r: (r.get('frame') or '') == 'SAUCE_record')
+    for i, r in enumerate(default_sauce_rows(maxX, maxY)):
+        sheet.source.addRow(AttrDict(r), index=i)
+    vd.status(f'SAUCE record generated ({maxX+1}x{maxY+1})')
 
 @Drawing.api
 def select_top(sheet, box):
@@ -934,6 +962,7 @@ Drawing.bindkey('C', 'open-colors')
 Drawing.unbindkey('Ctrl+R')
 
 BaseSheet.addCommand(None, 'open-tutorial-darkdraw', 'vd.push(openSource(Drawing.tutorial_url))', 'Download and open DarkDraw tutorial as a DarkDraw sheet')
+Drawing.addCommand(None, 'generate-sauce', 'sheet.generate_sauce()', 'generate SAUCE metadata rows for current drawing')
 
 vd.addMenuItems('''
     File > New drawing > new-drawing
