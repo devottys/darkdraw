@@ -7,6 +7,7 @@ from .ansi import parse_color_string, xterm256_to_ansi16
 
 DUR_FORMAT_VERSION = 7
 DEFAULT_FRAMERATE = 10
+MAX_FRAMERATE = 50  # DurDraw caps playback at 50 fps
 
 vd.option('dur_save_colormode', 'auto', 'force .dur export color mode: 16, 256, or auto')
 
@@ -97,7 +98,7 @@ def save_dur(vd, p, vs):
         min_dur = 0
         targets = [(1, AttrDict())]
 
-    framerate = (1000 // min_dur) if min_dur > 0 else DEFAULT_FRAMERATE
+    framerate = min(1000 // min_dur, MAX_FRAMERATE) if min_dur > 0 else DEFAULT_FRAMERATE
 
     frames_out = []
     for fnum, f in targets:
